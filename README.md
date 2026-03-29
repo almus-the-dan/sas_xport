@@ -6,10 +6,11 @@ A Rust library for reading and writing SAS® Transport (XPORT) files, supporting
 
 - Read file-level metadata (SAS version, OS, creation date)
 - Read dataset schemas with full variable definitions (name, type, length, label, format)
-- Two record-reading APIs:
+- Three record-reading APIs:
   - **Iterator API** (`records()`) — fully owned values, simple to use
-  - **Zero-copy API** (`next_record()`) — borrows from an internal buffer, avoids per-record allocations
-- Write XPORT files with the `XportWriter` API
+  - **Borrowing API** (`next_record()`) — returns values that borrow from an internal buffer, avoiding per-record string allocations
+  - **Lazy API** (`next_lazy_record()`) — returns a `LazyXportRecord` that decodes values on demand, avoiding both the `Vec<XportValue>` allocation and any decoding work for fields you don't access
+- Write XPORT files with the `XportWriter` typestate API
 - Optional async support via the `tokio` feature
 - Optional `chrono` feature for date/time conversions
 
@@ -47,7 +48,7 @@ pub fn read_xport_file(file: File) -> Result<()> {
 }
 ```
 
-### Using `next_record` for zero-copy access
+### Using `next_record` for borrowing access
 
 ```rust
 use std::fs::File;
@@ -63,10 +64,43 @@ pub fn read_xport_file(file: File) -> Result<()> {
     loop {
         println!("Dataset: {}", dataset.schema().dataset_name());
 
-        let mut buffer = Vec::new();
-        while let Some(record) = dataset.next_record(&mut buffer)? {
-            // Values in `record` borrow from `buffer` and are
-            // invalidated on the next call to `next_record`.
+        while let Some(record) = dataset.next_record()? {
+            // Values in `record` borrow from the dataset's internal
+            // buffer and are invalidated on the next call.
+        }
+        println!("Record count: {}", dataset.record_number());
+        let Some(next) = dataset.next_dataset()? else {
+            break;
+        };
+        dataset = next;
+    }
+    Ok(())
+}
+```
+
+### Using `next_lazy_record` for lazy decoding
+
+```rust
+use std::fs::File;
+use sas_xport::sas::xport::{XportReader, XportReaderOptions, Result};
+
+pub fn read_xport_file(file: File) -> Result<()> {
+    let options = XportReaderOptions::builder().build();
+    let reader = XportReader::from_file(file, &options)?;
+    let Some(mut dataset) = reader.next_dataset()? else {
+        println!("File contains no datasets");
+        return Ok(());
+    };
+    loop {
+        let schema = dataset.schema();
+        let name_index = schema.variable_ordinal("NAME").unwrap();
+        println!("Dataset: {}", schema.dataset_name());
+
+        while let Some(record) = dataset.next_lazy_record()? {
+            // Values are decoded on demand — only pay for the
+            // fields you access.
+            let name = record.get(name_index).unwrap()?;
+            println!("Name: {name:?}");
         }
         println!("Record count: {}", dataset.record_number());
         let Some(next) = dataset.next_dataset()? else {
@@ -85,6 +119,7 @@ use std::fs::File;
 use sas_xport::sas::SasVariableType;
 use sas_xport::sas::xport::{
     Result, XportMetadata, XportSchema, XportValue, XportVariable, XportWriter,
+    XportWriterOptions,
 };
 
 pub fn write_xport_file(file: File) -> Result<()> {
@@ -107,7 +142,7 @@ pub fn write_xport_file(file: File) -> Result<()> {
         .add_variable(age)
         .try_build()?;
 
-    let writer = XportWriter::from_file(file, metadata, encoding_rs::UTF_8)?;
+    let writer = XportWriter::from_file(file, metadata, XportWriterOptions::default())?;
     let mut writer = writer.write_schema(schema)?;
     writer.write_record(&[XportValue::from("STUDY-001"), XportValue::from(35.0)])?;
     writer.write_record(&[XportValue::from("STUDY-001"), XportValue::from(42.5)])?;

@@ -37,7 +37,7 @@ impl SasFloat64 {
         }
     }
 
-    /// Creates a `SasFloat64` from an [`IbmFloat64`].
+    /// Creates a `SasFloat64` from an `IbmFloat64`.
     #[inline]
     #[must_use]
     pub const fn from_ibm_float_64(ibm: IbmFloat64) -> Self {

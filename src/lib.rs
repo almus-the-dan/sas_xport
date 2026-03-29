@@ -8,15 +8,19 @@
 //!
 //! # Reading records
 //!
-//! There are two ways to read records from a dataset:
+//! There are three ways to read records from a dataset:
 //!
 //! - **[`records()`](sas::xport::XportDataset::records)** returns an iterator that yields
 //!   fully owned values. This is the simplest approach but allocates a new `String` for each
 //!   character value in every record.
-//! - **[`next_record()`](sas::xport::XportDataset::next_record)** reads into a caller-provided
-//!   buffer and returns values that borrow from it. This avoids per-record allocations for
-//!   character data when the encoding is ASCII-compatible, making it better suited for
-//!   high-throughput processing.
+//! - **[`next_record()`](sas::xport::XportDataset::next_record)** returns an
+//!   [`XportRecord`](sas::xport::XportRecord) whose values borrow from the dataset's
+//!   internal buffer. This avoids per-record string allocations for character data when
+//!   the encoding is ASCII-compatible, making it better suited for high-throughput processing.
+//! - **[`next_lazy_record()`](sas::xport::XportDataset::next_lazy_record)** returns a
+//!   [`LazyXportRecord`](sas::xport::LazyXportRecord) that decodes values on demand.
+//!   This avoids both the `Vec<XportValue>` allocation and any decoding work for
+//!   fields you don't access, making it ideal when you only need a subset of columns.
 //!
 //! ## Using the record iterator
 //!
@@ -50,7 +54,7 @@
 //! }
 //! ```
 //!
-//! ## Using `next_record` for zero-copy access
+//! ## Using `next_record` for borrowing access
 //!
 //! ```rust
 //! use std::fs::File;
@@ -67,8 +71,42 @@
 //!         println!("Dataset: {}", dataset.schema().dataset_name());
 //!
 //!         while let Some(record) = dataset.next_record()? {
-//!             // Values in `record` borrow from `buffer` and are
-//!             // invalidated on the next call to `next_record`.
+//!             // Values in `record` borrow from the dataset's internal
+//!             // buffer and are invalidated on the next call.
+//!         }
+//!         println!("Record count: {}", dataset.record_number());
+//!         let Some(next) = dataset.next_dataset()? else {
+//!             break;
+//!         };
+//!         dataset = next;
+//!     }
+//!     Ok(())
+//! }
+//! ```
+//!
+//! ## Using `next_lazy_record` for lazy decoding
+//!
+//! ```rust
+//! use std::fs::File;
+//! use sas_xport::sas::xport::{XportReader, XportReaderOptions, Result};
+//!
+//! pub fn read_xport_file(file: File) -> Result<()> {
+//!     let options = XportReaderOptions::builder().build();
+//!     let reader = XportReader::from_file(file, &options)?;
+//!     let Some(mut dataset) = reader.next_dataset()? else {
+//!         println!("File contains no datasets");
+//!         return Ok(());
+//!     };
+//!     loop {
+//!         let schema = dataset.schema();
+//!         let name_index = schema.variable_ordinal("NAME").unwrap();
+//!         println!("Dataset: {}", schema.dataset_name());
+//!
+//!         while let Some(record) = dataset.next_lazy_record()? {
+//!             // Values are decoded on demand — only pay for the
+//!             // fields you access.
+//!             let name = record.get(name_index).unwrap()?;
+//!             println!("Name: {name:?}");
 //!         }
 //!         println!("Record count: {}", dataset.record_number());
 //!         let Some(next) = dataset.next_dataset()? else {

@@ -184,6 +184,12 @@ pub struct XportSchemaBuilder {
     record_count: Option<u64>,
 }
 
+impl Default for XportSchemaBuilder {
+    fn default() -> Self {
+        Self::new(SasDateTime::new())
+    }
+}
+
 impl XportSchemaBuilder {
     fn new(timestamp: SasDateTime) -> Self {
         // In the default schema we leave the variable map empty. We track new variables in a Vec

@@ -150,7 +150,7 @@ impl Default for SasDateTime {
 }
 
 /// A builder for constructing `SasDateTime` instances.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Default)]
 pub struct SasDateTimeBuilder {
     date_time: SasDateTime,
 }

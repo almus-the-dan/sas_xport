@@ -283,6 +283,12 @@ pub struct XportVariableBuilder {
     long_input_format: String,
 }
 
+impl Default for XportVariableBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl XportVariableBuilder {
     fn new() -> Self {
         XportVariableBuilder {

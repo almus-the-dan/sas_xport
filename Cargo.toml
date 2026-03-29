@@ -4,6 +4,18 @@ version = "0.1.0"
 edition = "2024"
 description = "A pure Rust library for reading and writing SAS Transport (XPORT) files in version 5 and version 8 formats, with support for sync and async I/O, lazy record decoding, and character encoding conversion."
 license = "MIT"
+homepage = "https://github.com/almus-the-dan/sas_xport"
+repository = "https://github.com/almus-the-dan/sas_xport"
+readme = "README.md"
+exclude = [
+    "precommit-check.ps1",
+    "profile.ps1",
+    "profile.sh",
+    ".github/",
+    "plans/",
+]
+keywords = ["sas", "xport", "xpt", "statistics", "data"]
+categories = ["parser-implementations", "encoding", "science"]
 
 [dependencies]
 chrono = { version = "0.4.26", optional = true }

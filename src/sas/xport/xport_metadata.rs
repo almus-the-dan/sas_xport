@@ -105,6 +105,12 @@ pub struct XportMetadataBuilder {
     modified: SasDateTime,
 }
 
+impl Default for XportMetadataBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl XportMetadataBuilder {
     fn new() -> Self {
         let timestamp = SasDateTime::new();

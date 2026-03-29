@@ -46,6 +46,12 @@ pub struct XportReaderOptionsBuilder {
     fallback_encodings: Vec<&'static Encoding>,
 }
 
+impl Default for XportReaderOptionsBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl XportReaderOptionsBuilder {
     fn new() -> Self {
         Self {

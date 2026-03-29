@@ -62,6 +62,12 @@ pub struct XportWriterOptionsBuilder {
     numeric_truncation_policy: TruncationPolicy,
 }
 
+impl Default for XportWriterOptionsBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl XportWriterOptionsBuilder {
     fn new() -> Self {
         Self {
