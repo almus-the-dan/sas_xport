@@ -18,9 +18,9 @@ keywords = ["sas", "xport", "xpt", "statistics", "data"]
 categories = ["parser-implementations", "encoding", "science"]
 
 [dependencies]
-chrono = { version = "0.4.26", optional = true }
+chrono = { version = "0.4.44", optional = true }
 encoding_rs = { version = "0.8.35" }
-tokio = { version = "1.46.1", features = ["io-util", "fs"], optional = true }
+tokio = { version = "1.50.0", features = ["io-util", "fs"], optional = true }
 
 [dev-dependencies]
 clap = { version = "4", features = ["derive"] }
@@ -28,7 +28,7 @@ criterion = { version = "0.8.2", features = ["html_reports"] }
 flate2 = "1"
 serde_json = "1"
 tempfile = "3"
-tokio = { version = "1.46.1", features = ["rt", "macros"] }
+tokio = { version = "1.50.0", features = ["rt", "macros"] }
 float-cmp = { version = "0.10.0" }
 
 [profile.profiling]
