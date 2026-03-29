@@ -152,13 +152,17 @@ pub fn write_xport_file(file: File) -> Result<()> {
 
 ## About
 
-In my recent line of work, I became very familiar with the SAS® Transport (XPORT) file format. I took a personal interest in Rust about 5 years ago and decided I needed an engaging side project to help me learn it better. That's how this project was born. Fortunately, I was able to claim this project, among several of my other pre-existing open source projects, as belonging to me when joining my last company.
+In my recent line of work, I became very familiar with the SAS® Transport (XPORT) file format. I took a personal interest in Rust about 5 years ago and decided I needed an engaging side project to help me learn it better. That's how this project was born.
 
 Rust still has a young ecosystem, and a great deal of statistical software requires working with SAS® XPORT files, especially in the clinical industry. I wanted to provide a pure Rust implementation. My goal was to make a flexible reader and writer that operated at breakneck speeds. I modeled it after other wonderful libraries like [BurntSushi/csv](https://github.com/BurntSushi/rust-csv) and [tafia/quick-xml](https://github.com/tafia/quick-xml).
 
-On a personal note, please do not treat this project as a source of free work. It started as a fun side project. I do take the quality of this project very seriously and want to provide a valuable resource to the community, but my personal time is precious and rare. Please do not create issues to submit feature requests – only submit legitimate bugs – and allow me the flexibility to address them at my own pace. I am happy to entertain high-quality pull requests on my own schedule. That said, do not get angry if I close issues and pull requests not following these guidelines. 
+This is a passion project that I maintain on my own time. I care deeply about its quality and want it to be genuinely useful, but I also want to keep it fun and sustainable. To that end:
 
-If you want to support me, please share this repository to help it grow.
+- **Bug reports** are always welcome. Please file issues for anything that isn't working correctly.
+- **Feature requests** are best expressed as pull requests. I'm much more likely to engage with a well-crafted PR than a request for new work.
+- **Timelines** are my own. I'll get to things when I can, and I may close issues or PRs that don't align with the project's direction — nothing personal.
+
+If you find this library valuable, the best way to support it is to contribute or share it with others.
 
 ## Benchmarks
 
