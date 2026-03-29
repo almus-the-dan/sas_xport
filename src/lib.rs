@@ -1,0 +1,129 @@
+//! Provides the ability to read and write SAS® Transport (XPORT) files, including version 5
+//! and 8 file formats. V8 is also used in SAS® V9+.
+//!
+//! [`XportReader`](sas::xport::XportReader) is the entry point for reading an XPORT
+//! file, and [`XportWriter`](sas::xport::XportWriter) is the entry point for writing one.
+//! An XPORT file consists of zero, one or more datasets, each with their own schema.
+//! The XPORT file also provides metadata about the file itself.
+//!
+//! # Reading records
+//!
+//! There are two ways to read records from a dataset:
+//!
+//! - **[`records()`](sas::xport::XportDataset::records)** returns an iterator that yields
+//!   fully owned values. This is the simplest approach but allocates a new `String` for each
+//!   character value in every record.
+//! - **[`next_record()`](sas::xport::XportDataset::next_record)** reads into a caller-provided
+//!   buffer and returns values that borrow from it. This avoids per-record allocations for
+//!   character data when the encoding is ASCII-compatible, making it better suited for
+//!   high-throughput processing.
+//!
+//! ## Using the record iterator
+//!
+//! ```rust
+//! use std::fs::File;
+//! use sas_xport::sas::xport::{XportReader, XportReaderOptions, Result};
+//!
+//! pub fn read_xport_file(file: File) -> Result<()> {
+//!     let options = XportReaderOptions::builder().build();
+//!     let reader = XportReader::from_file(file, &options)?;
+//!     let metadata = reader.metadata().clone();
+//!     let Some(mut dataset) = reader.next_dataset()? else {
+//!         println!("File contains no datasets");
+//!         return Ok(());
+//!     };
+//!     loop {
+//!         let schema = dataset.schema();
+//!         println!("Dataset: {} (SAS® {})", schema.dataset_name(), metadata.sas_version());
+//!         println!("Variable count: {}", schema.variables().len());
+//!
+//!         for record in dataset.records() {
+//!             let _record = record?;
+//!         }
+//!         println!("Record count: {}", dataset.record_number());
+//!         let Some(next) = dataset.next_dataset()? else {
+//!             break;
+//!         };
+//!         dataset = next;
+//!     }
+//!     Ok(())
+//! }
+//! ```
+//!
+//! ## Using `next_record` for zero-copy access
+//!
+//! ```rust
+//! use std::fs::File;
+//! use sas_xport::sas::xport::{XportReader, XportReaderOptions, Result};
+//!
+//! pub fn read_xport_file(file: File) -> Result<()> {
+//!     let options = XportReaderOptions::builder().build();
+//!     let reader = XportReader::from_file(file, &options)?;
+//!     let Some(mut dataset) = reader.next_dataset()? else {
+//!         println!("File contains no datasets");
+//!         return Ok(());
+//!     };
+//!     loop {
+//!         println!("Dataset: {}", dataset.schema().dataset_name());
+//!
+//!         while let Some(record) = dataset.next_record()? {
+//!             // Values in `record` borrow from `buffer` and are
+//!             // invalidated on the next call to `next_record`.
+//!         }
+//!         println!("Record count: {}", dataset.record_number());
+//!         let Some(next) = dataset.next_dataset()? else {
+//!             break;
+//!         };
+//!         dataset = next;
+//!     }
+//!     Ok(())
+//! }
+//! ```
+//!
+//! ## Writing records
+//!
+//! [`XportWriter`](sas::xport::XportWriter) is the entry point for writing an XPORT file.
+//! Build an [`XportMetadata`](sas::xport::XportMetadata) for file-level headers, then write
+//! one or more datasets, each with an [`XportSchema`](sas::xport::XportSchema) and records
+//! as slices of [`XportValue`](sas::xport::XportValue).
+//!
+//! ```rust
+//! use std::fs::File;
+//! use sas_xport::sas::SasVariableType;
+//! use sas_xport::sas::xport::{
+//!     Result, XportMetadata, XportSchema, XportValue, XportVariable, XportWriter,
+//!     XportWriterOptions,
+//! };
+//!
+//! pub fn write_xport_file(file: File) -> Result<()> {
+//!     let metadata = XportMetadata::builder().build();
+//!
+//!     let mut study_id = XportVariable::builder();
+//!     study_id
+//!         .set_short_name("STUDYID")
+//!         .set_value_type(SasVariableType::Character)
+//!         .set_value_length(20);
+//!
+//!     let mut age = XportVariable::builder();
+//!     age.set_short_name("AGE")
+//!         .set_value_type(SasVariableType::Numeric)
+//!         .set_value_length(8);
+//!
+//!     let schema = XportSchema::builder()
+//!         .set_dataset_name("DM")
+//!         .add_variable(study_id) // Pass the builders
+//!         .add_variable(age)
+//!         .try_build()?;
+//!
+//!     let writer = XportWriter::from_file(file, metadata, XportWriterOptions::default())?;
+//!     let mut writer = writer.write_schema(schema)?;
+//!     writer.write_record(&[XportValue::from("STUDY-001"), XportValue::from(35.0)])?;
+//!     writer.write_record(&[XportValue::from("STUDY-001"), XportValue::from(42.5)])?;
+//!     writer.finish()
+//! }
+//! ```
+
+#![warn(missing_docs)]
+
+mod ibm;
+pub mod sas;

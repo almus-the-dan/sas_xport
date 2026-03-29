@@ -1,0 +1,40 @@
+[package]
+name = "sas_xport"
+version = "0.1.0"
+edition = "2024"
+description = "A pure Rust library for reading and writing SAS Transport (XPORT) files in version 5 and version 8 formats, with support for sync and async I/O, lazy record decoding, and character encoding conversion."
+license = "MIT"
+
+[dependencies]
+chrono = { version = "0.4.26", optional = true }
+encoding_rs = { version = "0.8.35" }
+tokio = { version = "1.46.1", features = ["io-util", "fs"], optional = true }
+
+[dev-dependencies]
+clap = { version = "4", features = ["derive"] }
+criterion = { version = "0.8.2", features = ["html_reports"] }
+flate2 = "1"
+serde_json = "1"
+tempfile = "3"
+tokio = { version = "1.46.1", features = ["rt", "macros"] }
+float-cmp = { version = "0.10.0" }
+
+[profile.profiling]
+inherits = "release"
+debug = 1
+
+[[bench]]
+name = "read_records"
+harness = false
+
+[features]
+chrono = ["dep:chrono"]
+tokio = ["dep:tokio"]
+
+[lints.rust]
+rust_2018_idioms = "warn"
+missing_debug_implementations = "warn"
+
+[lints.clippy]
+all = "warn"
+pedantic = "warn"
