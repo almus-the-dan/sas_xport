@@ -11,8 +11,8 @@ A Rust library for reading and writing SAS® Transport (XPORT) files, supporting
   - **Borrowing API** (`next_record()`) — returns values that borrow from an internal buffer, avoiding per-record string allocations
   - **Lazy API** (`next_lazy_record()`) — returns a `LazyXportRecord` that decodes values on demand, avoiding both the `Vec<XportValue>` allocation and any decoding work for fields you don't access
 - Write XPORT files with the `XportWriter` typestate API
-- Optional async support via the `tokio` feature
-- Optional `chrono` feature for date/time conversions
+- Optional async support via the [`tokio` feature](#tokio--async-io)
+- Optional date/time conversions via the [`chrono` feature](#chrono--datetime-conversions)
 
 ## Usage
 
@@ -148,6 +148,57 @@ pub fn write_xport_file(file: File) -> Result<()> {
     writer.write_record(&[XportValue::from("STUDY-001"), XportValue::from(42.5)])?;
     writer.finish()
 }
+```
+
+## Feature Flags
+
+Both optional features are disabled by default. Enable them in your `Cargo.toml` as needed:
+
+```toml
+[dependencies]
+sas_xport = { version = "0.1", features = ["tokio", "chrono"] }
+```
+
+### `tokio` — Async I/O
+
+Enables async reader and writer types built on [Tokio](https://tokio.rs/):
+
+- `AsyncXportReader` — async counterpart of `XportReader`, with `from_file()`, `from_reader()`, and `next_dataset()`
+- `AsyncXportDataset` — read records asynchronously with `next_record()`
+- `AsyncXportWriter` / `AsyncXportWriterWithMetadata` / `AsyncXportWriterWithSchema` — async typestate writer matching the sync API
+
+```rust
+use tokio::fs::File;
+use sas_xport::sas::xport::{AsyncXportReader, XportReaderOptions, Result};
+
+async fn read_async(file: File) -> Result<()> {
+    let options = XportReaderOptions::builder().build();
+    let reader = AsyncXportReader::from_file(file, &options).await?;
+    let Some(mut dataset) = reader.next_dataset().await? else {
+        return Ok(());
+    };
+    while let Some(record) = dataset.next_record().await? {
+        // process record
+    }
+    Ok(())
+}
+```
+
+### `chrono` — Date/Time Conversions
+
+Enables conversions between `SasDateTime` and [`chrono::DateTime<Local>`](https://docs.rs/chrono/latest/chrono/):
+
+- `SasDateTime::now()` — creates a `SasDateTime` set to the current local time
+- `SasDateTime::to_chrono_date_time(base_year)` — converts to `DateTime<Local>`, using `base_year` (e.g., 1900 or 2000) to resolve the two-digit SAS year
+- `impl From<DateTime<Local>> for SasDateTime` — direct conversion from chrono into SAS format
+
+```rust
+use chrono::Local;
+use sas_xport::sas::SasDateTime;
+
+let now = SasDateTime::now();
+let from_chrono: SasDateTime = Local::now().into();
+let back = now.to_chrono_date_time(2000);
 ```
 
 ## About

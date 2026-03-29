@@ -160,6 +160,15 @@
 //!     writer.finish()
 //! }
 //! ```
+//!
+//! # Feature Flags
+//!
+//! Both features are disabled by default.
+//!
+//! | Feature  | Description |
+//! |----------|-------------|
+//! | `tokio`  | Async reader/writer types: [`AsyncXportReader`](sas::xport::AsyncXportReader), [`AsyncXportDataset`](sas::xport::AsyncXportDataset), [`AsyncXportWriter`](sas::xport::AsyncXportWriter), and related typestate types. |
+//! | `chrono` | Conversions between [`SasDateTime`](sas::SasDateTime) and [`chrono::DateTime<Local>`](chrono::DateTime), including [`SasDateTime::now()`](sas::SasDateTime::now) and [`SasDateTime::to_chrono_date_time()`](sas::SasDateTime::to_chrono_date_time). |
 
 #![warn(missing_docs)]
 
