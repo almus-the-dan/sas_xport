@@ -13,6 +13,7 @@ exclude = [
     "profile.sh",
     ".github/",
     "plans/",
+    "benches/data/",
 ]
 keywords = ["sas", "xport", "xpt", "statistics", "data"]
 categories = ["parser-implementations", "encoding", "science"]
