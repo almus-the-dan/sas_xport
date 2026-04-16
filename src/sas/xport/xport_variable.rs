@@ -619,9 +619,7 @@ mod tests {
 
     #[test]
     fn full_label_falls_back_to_short_label() {
-        let variable = XportVariable::builder()
-            .short_label("Short Label")
-            .build();
+        let variable = XportVariable::builder().short_label("Short Label").build();
         assert_eq!("Short Label", variable.full_label());
     }
 
@@ -651,9 +649,7 @@ mod tests {
 
     #[test]
     fn full_input_format_falls_back_to_short_input_format() {
-        let variable = XportVariable::builder()
-            .short_input_format("BEST")
-            .build();
+        let variable = XportVariable::builder().short_input_format("BEST").build();
         assert_eq!("BEST", variable.full_input_format());
     }
 

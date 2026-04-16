@@ -65,9 +65,7 @@ fn build_bench_schema() -> XportSchema {
 
     for &(name, var_type, length) in variables {
         let mut v = XportVariable::builder();
-        v.short_name(name)
-            .value_type(var_type)
-            .value_length(length);
+        v.short_name(name).value_type(var_type).value_length(length);
         builder.add_variable(v);
     }
 
