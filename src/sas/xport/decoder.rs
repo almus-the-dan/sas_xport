@@ -180,7 +180,7 @@ mod tests {
     #[test]
     fn test_metadata_from_options_adds_utf8_for_non_ascii_primary() {
         let options = XportReaderOptions::default()
-            .set_encoding(encoding_rs::SHIFT_JIS)
+            .encoding(encoding_rs::SHIFT_JIS)
             .build();
         let decoder = Decoder::metadata_from_options(&options);
         // Pure ASCII should decode via the UTF-8 safety net
@@ -191,7 +191,7 @@ mod tests {
     #[test]
     fn test_metadata_from_options_skips_utf8_when_fallback_is_ascii_compatible() {
         let options = XportReaderOptions::default()
-            .set_encoding(encoding_rs::SHIFT_JIS)
+            .encoding(encoding_rs::SHIFT_JIS)
             .add_fallback_encoding(encoding_rs::WINDOWS_1252)
             .build();
         let decoder = Decoder::metadata_from_options(&options);
@@ -204,7 +204,7 @@ mod tests {
     #[test]
     fn test_metadata_from_options_ascii_compatible_primary_no_extra_utf8() {
         let options = XportReaderOptions::default()
-            .set_encoding(encoding_rs::UTF_8)
+            .encoding(encoding_rs::UTF_8)
             .build();
         let decoder = Decoder::metadata_from_options(&options);
         let result = decoder.decode(b"HELLO").unwrap();

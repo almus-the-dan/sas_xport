@@ -17,7 +17,7 @@ const RECORD_COUNT: usize = 100_000;
 /// Build the ADaM-style schema: 8 numeric + 12 character = 20 variables.
 fn build_bench_schema() -> XportSchema {
     let mut builder = XportSchema::builder();
-    builder.set_dataset_name("BENCH");
+    builder.dataset_name("BENCH");
 
     let variables: &[(&str, SasVariableType, u16)] = &[
         ("STUDYID", SasVariableType::Character, 20),
@@ -44,9 +44,9 @@ fn build_bench_schema() -> XportSchema {
 
     for &(name, var_type, length) in variables {
         let mut v = XportVariable::builder();
-        v.set_short_name(name)
-            .set_value_type(var_type)
-            .set_value_length(length);
+        v.short_name(name)
+            .value_type(var_type)
+            .value_length(length);
         builder.add_variable(v);
     }
 

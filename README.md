@@ -123,19 +123,19 @@ pub fn write_xport_file(file: File) -> Result<()> {
 
     let mut study_id = XportVariable::builder();
     study_id
-        .set_short_name("STUDYID")
-        .set_value_type(SasVariableType::Character)
-        .set_value_length(20);
+        .short_name("STUDYID")
+        .value_type(SasVariableType::Character)
+        .value_length(20);
 
     let mut age = XportVariable::builder();
-    age.set_short_name("AGE")
-        .set_value_type(SasVariableType::Numeric)
-        .set_value_length(8);
+    age.short_name("AGE")
+        .value_type(SasVariableType::Numeric)
+        .value_length(8);
 
     let schema = XportSchema::builder()
-        .set_dataset_name("DM")
-        .add_variable(study_id)
-        .add_variable(age)
+        .dataset_name("DM")
+        .variable(study_id)
+        .variable(age)
         .try_build()?;
 
     let writer = XportWriter::from_file(file, metadata)?;

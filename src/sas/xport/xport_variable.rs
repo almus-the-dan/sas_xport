@@ -318,7 +318,7 @@ impl XportVariableBuilder {
 
     /// Sets the type of value stored in the variable.
     #[inline]
-    pub fn set_value_type(&mut self, value_type: SasVariableType) -> &mut Self {
+    pub fn value_type(&mut self, value_type: SasVariableType) -> &mut Self {
         self.value_type = value_type;
         self
     }
@@ -326,14 +326,14 @@ impl XportVariableBuilder {
     /// Sets the hash of the variable name. This should be left 0 unless there is a
     /// compelling reason to do otherwise.
     #[inline]
-    pub fn set_hash(&mut self, hash: u16) -> &mut Self {
+    pub fn hash(&mut self, hash: u16) -> &mut Self {
         self.hash = hash;
         self
     }
 
     /// Sets the length, in bytes, of the variable.
     #[inline]
-    pub fn set_value_length(&mut self, value_length: u16) -> &mut Self {
+    pub fn value_length(&mut self, value_length: u16) -> &mut Self {
         self.value_length = value_length;
         self
     }
@@ -341,7 +341,7 @@ impl XportVariableBuilder {
     /// Sets the ordinal position of the variable, 1-based. If not set,
     /// the number will be auto-computed when building an `XportSchema`.
     #[inline]
-    pub fn set_number(&mut self, number: u16) -> &mut Self {
+    pub fn number(&mut self, number: u16) -> &mut Self {
         self.number = Some(number);
         self
     }
@@ -356,14 +356,14 @@ impl XportVariableBuilder {
 
     /// Sets the name of the variable, which will be truncated to 8 bytes.
     #[inline]
-    pub fn set_short_name(&mut self, short_name: impl Into<String>) -> &mut Self {
+    pub fn short_name(&mut self, short_name: impl Into<String>) -> &mut Self {
         self.short_name = short_name.into();
         self
     }
 
     /// Sets the label of the variable, which will be truncated to 40 bytes.
     #[inline]
-    pub fn set_short_label(&mut self, short_label: impl Into<String>) -> &mut Self {
+    pub fn short_label(&mut self, short_label: impl Into<String>) -> &mut Self {
         self.short_label = short_label.into();
         self
     }
@@ -371,7 +371,7 @@ impl XportVariableBuilder {
     /// Sets the format of the variable, which will be truncated to 8 bytes. The format
     /// should not include a leading '.'.
     #[inline]
-    pub fn set_short_format(&mut self, short_format: impl Into<String>) -> &mut Self {
+    pub fn short_format(&mut self, short_format: impl Into<String>) -> &mut Self {
         self.short_format = short_format.into();
         self
     }
@@ -379,7 +379,7 @@ impl XportVariableBuilder {
     /// Sets the length associated with the format, in digits. If a length is not required,
     /// provide 0 (the default).
     #[inline]
-    pub fn set_format_length(&mut self, format_length: u16) -> &mut Self {
+    pub fn format_length(&mut self, format_length: u16) -> &mut Self {
         self.format_length = format_length;
         self
     }
@@ -387,7 +387,7 @@ impl XportVariableBuilder {
     /// Sets the precision of the format, in digits. If the precision is not required, provide 0
     /// (the default).
     #[inline]
-    pub fn set_format_precision(&mut self, format_precision: u16) -> &mut Self {
+    pub fn format_precision(&mut self, format_precision: u16) -> &mut Self {
         self.format_precision = format_precision;
         self
     }
@@ -395,21 +395,21 @@ impl XportVariableBuilder {
     /// Sets whether the value is justified to the left or right. This controls where
     /// padding appears.
     #[inline]
-    pub fn set_justification(&mut self, justification: SasJustification) -> &mut Self {
+    pub fn justification(&mut self, justification: SasJustification) -> &mut Self {
         self.justification = justification;
         self
     }
 
     /// Sets the input format.
     #[inline]
-    pub fn set_short_input_format(&mut self, short_input_format: impl Into<String>) -> &mut Self {
+    pub fn short_input_format(&mut self, short_input_format: impl Into<String>) -> &mut Self {
         self.short_input_format = short_input_format.into();
         self
     }
 
     /// Sets the input format length, in digits. Use zero if no length is required (the default).
     #[inline]
-    pub fn set_input_format_length(&mut self, input_format_length: u16) -> &mut Self {
+    pub fn input_format_length(&mut self, input_format_length: u16) -> &mut Self {
         self.input_format_length = input_format_length;
         self
     }
@@ -417,7 +417,7 @@ impl XportVariableBuilder {
     /// Sets the input format precision, in digits. Use zero if no precision is required
     /// (the default).
     #[inline]
-    pub fn set_input_format_precision(&mut self, input_format_precision: u16) -> &mut Self {
+    pub fn input_format_precision(&mut self, input_format_precision: u16) -> &mut Self {
         self.input_format_precision = input_format_precision;
         self
     }
@@ -425,7 +425,7 @@ impl XportVariableBuilder {
     /// Sets the offset, in bytes, of the variable from the beginning of each record.
     /// If not set, the position will be auto-computed when building an `XportSchema`.
     #[inline]
-    pub fn set_position(&mut self, position: u32) -> &mut Self {
+    pub fn position(&mut self, position: u32) -> &mut Self {
         self.position = Some(position);
         self
     }
@@ -440,35 +440,35 @@ impl XportVariableBuilder {
 
     /// Sets the name, which will be truncated to 32 bytes.
     #[inline]
-    pub fn set_medium_name(&mut self, medium_name: impl Into<String>) -> &mut Self {
+    pub fn medium_name(&mut self, medium_name: impl Into<String>) -> &mut Self {
         self.medium_name = medium_name.into();
         self
     }
 
     /// Sets the full name of the variable.
     #[inline]
-    pub fn set_long_name(&mut self, long_name: impl Into<String>) -> &mut Self {
+    pub fn long_name(&mut self, long_name: impl Into<String>) -> &mut Self {
         self.long_name = long_name.into();
         self
     }
 
     /// Sets the full label of the variable.
     #[inline]
-    pub fn set_long_label(&mut self, long_label: impl Into<String>) -> &mut Self {
+    pub fn long_label(&mut self, long_label: impl Into<String>) -> &mut Self {
         self.long_label = long_label.into();
         self
     }
 
     /// Sets the full format of the variable.
     #[inline]
-    pub fn set_long_format(&mut self, long_format: impl Into<String>) -> &mut Self {
+    pub fn long_format(&mut self, long_format: impl Into<String>) -> &mut Self {
         self.long_format = long_format.into();
         self
     }
 
     /// Sets the full input format of the variable.
     #[inline]
-    pub fn set_long_input_format(&mut self, long_input_format: impl Into<String>) -> &mut Self {
+    pub fn long_input_format(&mut self, long_input_format: impl Into<String>) -> &mut Self {
         self.long_input_format = long_input_format.into();
         self
     }
@@ -477,7 +477,7 @@ impl XportVariableBuilder {
     /// stored as-is, while the medium and short names are truncated to 32 and 8 bytes
     /// respectively.
     #[inline]
-    pub fn set_full_name(&mut self, name: impl Into<String>) -> &mut Self {
+    pub fn full_name(&mut self, name: impl Into<String>) -> &mut Self {
         let name = name.into();
         let short_name = truncate(
             &name,
@@ -542,25 +542,25 @@ mod tests {
     #[test]
     fn getters_work_char_build() {
         let variable = XportVariable::builder()
-            .set_value_type(SasVariableType::Character)
-            .set_hash(0)
-            .set_value_length(8)
-            .set_number(1)
-            .set_short_name("STUDYID")
-            .set_short_label("Study Identifier")
-            .set_short_format("")
-            .set_format_length(0)
-            .set_format_precision(0)
-            .set_justification(SasJustification::Left)
-            .set_short_input_format("")
-            .set_input_format_length(0)
-            .set_input_format_precision(0)
-            .set_position(0)
-            .set_medium_name("STUDYID")
-            .set_long_name("STUDYID")
-            .set_long_label("Study Identifier")
-            .set_long_format("")
-            .set_long_input_format("")
+            .value_type(SasVariableType::Character)
+            .hash(0)
+            .value_length(8)
+            .number(1)
+            .short_name("STUDYID")
+            .short_label("Study Identifier")
+            .short_format("")
+            .format_length(0)
+            .format_precision(0)
+            .justification(SasJustification::Left)
+            .short_input_format("")
+            .input_format_length(0)
+            .input_format_precision(0)
+            .position(0)
+            .medium_name("STUDYID")
+            .long_name("STUDYID")
+            .long_label("Study Identifier")
+            .long_format("")
+            .long_input_format("")
             .build();
         assert_eq!(SasVariableType::Character, variable.value_type());
         assert_eq!(0, variable.hash());
@@ -586,9 +586,9 @@ mod tests {
     #[test]
     fn full_name_prefers_long_name() {
         let variable = XportVariable::builder()
-            .set_short_name("SHORT")
-            .set_medium_name("MEDIUM_NAME")
-            .set_long_name("long_name_value")
+            .short_name("SHORT")
+            .medium_name("MEDIUM_NAME")
+            .long_name("long_name_value")
             .build();
         assert_eq!("long_name_value", variable.full_name());
     }
@@ -596,23 +596,23 @@ mod tests {
     #[test]
     fn full_name_falls_back_to_medium_name() {
         let variable = XportVariable::builder()
-            .set_short_name("SHORT")
-            .set_medium_name("MEDIUM_NAME")
+            .short_name("SHORT")
+            .medium_name("MEDIUM_NAME")
             .build();
         assert_eq!("MEDIUM_NAME", variable.full_name());
     }
 
     #[test]
     fn full_name_falls_back_to_short_name() {
-        let variable = XportVariable::builder().set_short_name("SHORT").build();
+        let variable = XportVariable::builder().short_name("SHORT").build();
         assert_eq!("SHORT", variable.full_name());
     }
 
     #[test]
     fn full_label_prefers_long_label() {
         let variable = XportVariable::builder()
-            .set_short_label("Short Label")
-            .set_long_label("Long Label Value")
+            .short_label("Short Label")
+            .long_label("Long Label Value")
             .build();
         assert_eq!("Long Label Value", variable.full_label());
     }
@@ -620,7 +620,7 @@ mod tests {
     #[test]
     fn full_label_falls_back_to_short_label() {
         let variable = XportVariable::builder()
-            .set_short_label("Short Label")
+            .short_label("Short Label")
             .build();
         assert_eq!("Short Label", variable.full_label());
     }
@@ -628,23 +628,23 @@ mod tests {
     #[test]
     fn full_format_prefers_long_format() {
         let variable = XportVariable::builder()
-            .set_short_format("DOLLAR")
-            .set_long_format("DOLLAR32.2")
+            .short_format("DOLLAR")
+            .long_format("DOLLAR32.2")
             .build();
         assert_eq!("DOLLAR32.2", variable.full_format());
     }
 
     #[test]
     fn full_format_falls_back_to_short_format() {
-        let variable = XportVariable::builder().set_short_format("DOLLAR").build();
+        let variable = XportVariable::builder().short_format("DOLLAR").build();
         assert_eq!("DOLLAR", variable.full_format());
     }
 
     #[test]
     fn full_input_format_prefers_long_input_format() {
         let variable = XportVariable::builder()
-            .set_short_input_format("BEST")
-            .set_long_input_format("BEST32.")
+            .short_input_format("BEST")
+            .long_input_format("BEST32.")
             .build();
         assert_eq!("BEST32.", variable.full_input_format());
     }
@@ -652,14 +652,14 @@ mod tests {
     #[test]
     fn full_input_format_falls_back_to_short_input_format() {
         let variable = XportVariable::builder()
-            .set_short_input_format("BEST")
+            .short_input_format("BEST")
             .build();
         assert_eq!("BEST", variable.full_input_format());
     }
 
     #[test]
     fn set_full_name_short_name_fits_all_tiers() {
-        let variable = XportVariable::builder().set_full_name("STUDYID").build();
+        let variable = XportVariable::builder().full_name("STUDYID").build();
         assert_eq!("STUDYID", variable.short_name());
         assert_eq!("STUDYID", variable.medium_name());
         assert_eq!("STUDYID", variable.long_name());
@@ -671,7 +671,7 @@ mod tests {
         // 40 chars — exceeds both short (8) and medium (32) limits
         let name = "a_variable_name_that_is_forty_characters";
         assert_eq!(40, name.len());
-        let variable = XportVariable::builder().set_full_name(name).build();
+        let variable = XportVariable::builder().full_name(name).build();
         assert_eq!("a_variab", variable.short_name());
         assert_eq!("a_variable_name_that_is_forty_ch", variable.medium_name());
         assert_eq!(name, variable.long_name());
@@ -683,7 +683,7 @@ mod tests {
         // 20 chars — exceeds short (8) but fits medium (32)
         let name = "a_medium_length_name";
         assert_eq!(20, name.len());
-        let variable = XportVariable::builder().set_full_name(name).build();
+        let variable = XportVariable::builder().full_name(name).build();
         assert_eq!("a_medium", variable.short_name());
         assert_eq!(name, variable.medium_name());
         assert_eq!(name, variable.long_name());
@@ -694,7 +694,7 @@ mod tests {
         // 'é' is 2 bytes — placing it at byte 8 means truncation can't cut at 8
         let name = "1234567é9";
         assert_eq!(10, name.len());
-        let variable = XportVariable::builder().set_full_name(name).build();
+        let variable = XportVariable::builder().full_name(name).build();
         assert_eq!("1234567", variable.short_name());
         assert_eq!(7, variable.short_name().len());
     }
@@ -702,25 +702,25 @@ mod tests {
     #[test]
     fn getters_work_number_with_format() {
         let variable = XportVariable::builder()
-            .set_value_type(SasVariableType::Numeric)
-            .set_hash(0)
-            .set_value_length(8)
-            .set_number(1)
-            .set_short_name("LBSTRESN")
-            .set_short_label("Standard Result")
-            .set_short_format("DOLLAR")
-            .set_format_length(10)
-            .set_format_precision(2)
-            .set_justification(SasJustification::Left)
-            .set_short_input_format("")
-            .set_input_format_length(0)
-            .set_input_format_precision(0)
-            .set_position(0)
-            .set_medium_name("LBSTRESN")
-            .set_long_name("LBSTRESN")
-            .set_long_label("Standard Result")
-            .set_long_format("DOLLAR")
-            .set_long_input_format("")
+            .value_type(SasVariableType::Numeric)
+            .hash(0)
+            .value_length(8)
+            .number(1)
+            .short_name("LBSTRESN")
+            .short_label("Standard Result")
+            .short_format("DOLLAR")
+            .format_length(10)
+            .format_precision(2)
+            .justification(SasJustification::Left)
+            .short_input_format("")
+            .input_format_length(0)
+            .input_format_precision(0)
+            .position(0)
+            .medium_name("LBSTRESN")
+            .long_name("LBSTRESN")
+            .long_label("Standard Result")
+            .long_format("DOLLAR")
+            .long_input_format("")
             .build();
         assert_eq!(SasVariableType::Numeric, variable.value_type());
         assert_eq!(0, variable.hash());

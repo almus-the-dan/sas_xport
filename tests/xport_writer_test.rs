@@ -29,13 +29,13 @@ mod tests {
             .second(0)
             .build();
         let metadata = XportMetadata::builder()
-            .set_symbol1("SAS")
-            .set_symbol2("SAS")
-            .set_library("MYLIB")
-            .set_sas_version("9.4")
-            .set_operating_system("Linux")
-            .set_created(created)
-            .set_modified(modified)
+            .symbol1("SAS")
+            .symbol2("SAS")
+            .library("MYLIB")
+            .sas_version("9.4")
+            .operating_system("Linux")
+            .created(created)
+            .modified(modified)
             .build();
 
         let mut buf = Cursor::new(Vec::new());
@@ -59,12 +59,12 @@ mod tests {
     #[test]
     fn round_trips_v8_metadata() {
         let metadata = XportMetadata::builder()
-            .set_xport_file_version(XportFileVersion::V8)
-            .set_symbol1("TST")
-            .set_symbol2("XPT")
-            .set_library("SASLIB")
-            .set_sas_version("9.1")
-            .set_operating_system("WinXP")
+            .xport_file_version(XportFileVersion::V8)
+            .symbol1("TST")
+            .symbol2("XPT")
+            .library("SASLIB")
+            .sas_version("9.1")
+            .operating_system("WinXP")
             .build();
 
         let mut buf = Cursor::new(Vec::new());
@@ -122,7 +122,7 @@ mod tests {
     /// the schema from the first dataset.
     fn round_trip_schema(file_version: XportFileVersion, schema: XportSchema) -> XportSchema {
         let metadata = XportMetadata::builder()
-            .set_xport_file_version(file_version)
+            .xport_file_version(file_version)
             .build();
         let mut buffer = Cursor::new(Vec::new());
         let writer = XportWriter::from_writer(&mut buffer, metadata).unwrap();
@@ -138,13 +138,13 @@ mod tests {
     #[test]
     fn round_trips_v5_schema_with_one_numeric_variable() {
         let schema = XportSchema::builder()
-            .set_dataset_name("AE")
-            .set_dataset_label("Adverse Events")
+            .dataset_name("AE")
+            .dataset_label("Adverse Events")
             .add_variable({
                 let mut v = XportVariable::builder();
-                v.set_short_name("AESEQ")
-                    .set_value_type(SasVariableType::Numeric)
-                    .set_value_length(8);
+                v.short_name("AESEQ")
+                    .value_type(SasVariableType::Numeric)
+                    .value_length(8);
                 v
             })
             .try_build()
@@ -168,39 +168,39 @@ mod tests {
     #[test]
     fn round_trips_v5_schema_with_mixed_variables() {
         let schema = XportSchema::builder()
-            .set_dataset_name("DM")
-            .set_dataset_label("Demographics")
-            .set_version("9.4")
-            .set_operating_system("Linux")
+            .dataset_name("DM")
+            .dataset_label("Demographics")
+            .version("9.4")
+            .operating_system("Linux")
             .add_variable({
                 let mut variable = XportVariable::builder();
                 variable
-                    .set_short_name("STUDYID")
-                    .set_value_type(SasVariableType::Character)
-                    .set_value_length(20)
-                    .set_short_label("Study ID")
-                    .set_short_format("$CHAR")
-                    .set_format_length(20)
-                    .set_justification(SasJustification::Left);
+                    .short_name("STUDYID")
+                    .value_type(SasVariableType::Character)
+                    .value_length(20)
+                    .short_label("Study ID")
+                    .short_format("$CHAR")
+                    .format_length(20)
+                    .justification(SasJustification::Left);
                 variable
             })
             .add_variable({
                 let mut variable = XportVariable::builder();
                 variable
-                    .set_short_name("AGE")
-                    .set_value_type(SasVariableType::Numeric)
-                    .set_value_length(8)
-                    .set_short_label("Age")
-                    .set_justification(SasJustification::Right);
+                    .short_name("AGE")
+                    .value_type(SasVariableType::Numeric)
+                    .value_length(8)
+                    .short_label("Age")
+                    .justification(SasJustification::Right);
                 variable
             })
             .add_variable({
                 let mut variable = XportVariable::builder();
                 variable
-                    .set_short_name("SEX")
-                    .set_value_type(SasVariableType::Character)
-                    .set_value_length(1)
-                    .set_short_label("Sex");
+                    .short_name("SEX")
+                    .value_type(SasVariableType::Character)
+                    .value_length(1)
+                    .short_label("Sex");
                 variable
             })
             .try_build()
@@ -240,16 +240,16 @@ mod tests {
     #[test]
     fn round_trips_v8_schema_with_long_name_and_label() {
         let schema = XportSchema::builder()
-            .set_xport_dataset_version(XportDatasetVersion::V8)
-            .set_dataset_name("ADVERSE_EVENTS_DATASET")
-            .set_dataset_label("Adverse Events Long Label")
+            .xport_dataset_version(XportDatasetVersion::V8)
+            .dataset_name("ADVERSE_EVENTS_DATASET")
+            .dataset_label("Adverse Events Long Label")
             .add_variable({
                 let mut variable = XportVariable::builder();
                 variable
-                    .set_full_name("ADVERSE_EVENT_SEQUENCE_NUMBER")
-                    .set_value_type(SasVariableType::Numeric)
-                    .set_value_length(8)
-                    .set_long_label("Adverse Event Sequence Number Within Subject");
+                    .full_name("ADVERSE_EVENT_SEQUENCE_NUMBER")
+                    .value_type(SasVariableType::Numeric)
+                    .value_length(8)
+                    .long_label("Adverse Event Sequence Number Within Subject");
                 variable
             })
             .try_build()
@@ -274,15 +274,15 @@ mod tests {
     #[test]
     fn round_trips_v8_schema_with_short_names_no_extensions() {
         let schema = XportSchema::builder()
-            .set_xport_dataset_version(XportDatasetVersion::V8)
-            .set_dataset_name("VS")
+            .xport_dataset_version(XportDatasetVersion::V8)
+            .dataset_name("VS")
             .add_variable({
                 let mut variable = XportVariable::builder();
                 variable
-                    .set_short_name("WEIGHT")
-                    .set_value_type(SasVariableType::Numeric)
-                    .set_value_length(8)
-                    .set_short_label("Weight");
+                    .short_name("WEIGHT")
+                    .value_type(SasVariableType::Numeric)
+                    .value_length(8)
+                    .short_label("Weight");
                 variable
             })
             .try_build()
@@ -299,13 +299,13 @@ mod tests {
     #[test]
     fn round_trips_v5_schema_record_count_is_zero() {
         let schema = XportSchema::builder()
-            .set_dataset_name("EMPTY")
+            .dataset_name("EMPTY")
             .add_variable({
                 let mut variable = XportVariable::builder();
                 variable
-                    .set_short_name("X")
-                    .set_value_type(SasVariableType::Numeric)
-                    .set_value_length(8);
+                    .short_name("X")
+                    .value_type(SasVariableType::Numeric)
+                    .value_length(8);
                 variable
             })
             .try_build()
@@ -318,14 +318,14 @@ mod tests {
     #[test]
     fn round_trips_v8_schema_record_count_is_zero() {
         let schema = XportSchema::builder()
-            .set_xport_dataset_version(XportDatasetVersion::V8)
-            .set_dataset_name("EMPTY")
+            .xport_dataset_version(XportDatasetVersion::V8)
+            .dataset_name("EMPTY")
             .add_variable({
                 let mut variable = XportVariable::builder();
                 variable
-                    .set_short_name("X")
-                    .set_value_type(SasVariableType::Numeric)
-                    .set_value_length(8);
+                    .short_name("X")
+                    .value_type(SasVariableType::Numeric)
+                    .value_length(8);
                 variable
             })
             .try_build()
@@ -338,21 +338,21 @@ mod tests {
     #[test]
     fn output_length_is_multiple_of_80() {
         let schema = XportSchema::builder()
-            .set_dataset_name("LB")
+            .dataset_name("LB")
             .add_variable({
                 let mut variable = XportVariable::builder();
                 variable
-                    .set_short_name("LBTEST")
-                    .set_value_type(SasVariableType::Character)
-                    .set_value_length(40);
+                    .short_name("LBTEST")
+                    .value_type(SasVariableType::Character)
+                    .value_length(40);
                 variable
             })
             .add_variable({
                 let mut variable = XportVariable::builder();
                 variable
-                    .set_short_name("LBORRES")
-                    .set_value_type(SasVariableType::Character)
-                    .set_value_length(200);
+                    .short_name("LBORRES")
+                    .value_type(SasVariableType::Character)
+                    .value_length(200);
                 variable
             })
             .try_build()
@@ -399,19 +399,19 @@ mod tests {
     #[test]
     fn round_trips_v5_single_dataset_with_records() {
         let schema = XportSchema::builder()
-            .set_dataset_name("DM")
+            .dataset_name("DM")
             .add_variable({
                 let mut v = XportVariable::builder();
-                v.set_short_name("STUDYID")
-                    .set_value_type(SasVariableType::Character)
-                    .set_value_length(8);
+                v.short_name("STUDYID")
+                    .value_type(SasVariableType::Character)
+                    .value_length(8);
                 v
             })
             .add_variable({
                 let mut v = XportVariable::builder();
-                v.set_short_name("AGE")
-                    .set_value_type(SasVariableType::Numeric)
-                    .set_value_length(8);
+                v.short_name("AGE")
+                    .value_type(SasVariableType::Numeric)
+                    .value_length(8);
                 v
             })
             .try_build()
@@ -449,12 +449,12 @@ mod tests {
     #[test]
     fn round_trips_v5_single_dataset_without_count() {
         let schema = XportSchema::builder()
-            .set_dataset_name("VS")
+            .dataset_name("VS")
             .add_variable({
                 let mut v = XportVariable::builder();
-                v.set_short_name("WEIGHT")
-                    .set_value_type(SasVariableType::Numeric)
-                    .set_value_length(8);
+                v.short_name("WEIGHT")
+                    .value_type(SasVariableType::Numeric)
+                    .value_length(8);
                 v
             })
             .try_build()
@@ -481,20 +481,20 @@ mod tests {
     #[test]
     fn round_trips_v8_single_dataset_with_count() {
         let schema = XportSchema::builder()
-            .set_xport_dataset_version(XportDatasetVersion::V8)
-            .set_dataset_name("AE")
+            .xport_dataset_version(XportDatasetVersion::V8)
+            .dataset_name("AE")
             .add_variable({
                 let mut v = XportVariable::builder();
-                v.set_full_name("ADVERSE_EVENT_TERM")
-                    .set_value_type(SasVariableType::Character)
-                    .set_value_length(40);
+                v.full_name("ADVERSE_EVENT_TERM")
+                    .value_type(SasVariableType::Character)
+                    .value_length(40);
                 v
             })
             .try_build()
             .unwrap();
 
         let metadata = XportMetadata::builder()
-            .set_xport_file_version(XportFileVersion::V8)
+            .xport_file_version(XportFileVersion::V8)
             .build();
         let mut buffer = Cursor::new(Vec::new());
         let writer = XportWriter::from_writer(&mut buffer, metadata).unwrap();
@@ -530,31 +530,31 @@ mod tests {
     #[test]
     fn round_trips_v5_multiple_datasets() {
         let schema1 = XportSchema::builder()
-            .set_dataset_name("DM")
+            .dataset_name("DM")
             .add_variable({
                 let mut v = XportVariable::builder();
-                v.set_short_name("SUBJID")
-                    .set_value_type(SasVariableType::Character)
-                    .set_value_length(8);
+                v.short_name("SUBJID")
+                    .value_type(SasVariableType::Character)
+                    .value_length(8);
                 v
             })
             .try_build()
             .unwrap();
 
         let schema2 = XportSchema::builder()
-            .set_dataset_name("AE")
+            .dataset_name("AE")
             .add_variable({
                 let mut v = XportVariable::builder();
-                v.set_short_name("AETERM")
-                    .set_value_type(SasVariableType::Character)
-                    .set_value_length(20);
+                v.short_name("AETERM")
+                    .value_type(SasVariableType::Character)
+                    .value_length(20);
                 v
             })
             .add_variable({
                 let mut v = XportVariable::builder();
-                v.set_short_name("AESEQ")
-                    .set_value_type(SasVariableType::Numeric)
-                    .set_value_length(8);
+                v.short_name("AESEQ")
+                    .value_type(SasVariableType::Numeric)
+                    .value_length(8);
                 v
             })
             .try_build()
@@ -607,33 +607,33 @@ mod tests {
         // Use a character variable with length >= 80 to avoid the narrow-record
         // ambiguity in the reader's blank-row look-ahead.
         let schema1 = XportSchema::builder()
-            .set_xport_dataset_version(XportDatasetVersion::V8)
-            .set_dataset_name("DM")
+            .xport_dataset_version(XportDatasetVersion::V8)
+            .dataset_name("DM")
             .add_variable({
                 let mut v = XportVariable::builder();
-                v.set_short_name("SUBJID")
-                    .set_value_type(SasVariableType::Character)
-                    .set_value_length(80);
+                v.short_name("SUBJID")
+                    .value_type(SasVariableType::Character)
+                    .value_length(80);
                 v
             })
             .try_build()
             .unwrap();
 
         let schema2 = XportSchema::builder()
-            .set_xport_dataset_version(XportDatasetVersion::V8)
-            .set_dataset_name("VS")
+            .xport_dataset_version(XportDatasetVersion::V8)
+            .dataset_name("VS")
             .add_variable({
                 let mut v = XportVariable::builder();
-                v.set_short_name("VSTEST")
-                    .set_value_type(SasVariableType::Character)
-                    .set_value_length(80);
+                v.short_name("VSTEST")
+                    .value_type(SasVariableType::Character)
+                    .value_length(80);
                 v
             })
             .try_build()
             .unwrap();
 
         let metadata = XportMetadata::builder()
-            .set_xport_file_version(XportFileVersion::V8)
+            .xport_file_version(XportFileVersion::V8)
             .build();
         let mut buffer = Cursor::new(Vec::new());
         let writer = XportWriter::from_writer(&mut buffer, metadata).unwrap();
@@ -675,26 +675,26 @@ mod tests {
     #[test]
     fn round_trips_v5_single_dataset_with_records_wide() {
         let schema = XportSchema::builder()
-            .set_dataset_name("DM")
+            .dataset_name("DM")
             .add_variable({
                 let mut v = XportVariable::builder();
-                v.set_short_name("STUDYID")
-                    .set_value_type(SasVariableType::Character)
-                    .set_value_length(40);
+                v.short_name("STUDYID")
+                    .value_type(SasVariableType::Character)
+                    .value_length(40);
                 v
             })
             .add_variable({
                 let mut v = XportVariable::builder();
-                v.set_short_name("USUBJID")
-                    .set_value_type(SasVariableType::Character)
-                    .set_value_length(40);
+                v.short_name("USUBJID")
+                    .value_type(SasVariableType::Character)
+                    .value_length(40);
                 v
             })
             .add_variable({
                 let mut v = XportVariable::builder();
-                v.set_short_name("AGE")
-                    .set_value_type(SasVariableType::Numeric)
-                    .set_value_length(8);
+                v.short_name("AGE")
+                    .value_type(SasVariableType::Numeric)
+                    .value_length(8);
                 v
             })
             .try_build()
@@ -742,12 +742,12 @@ mod tests {
     #[test]
     fn round_trips_v5_single_dataset_without_count_wide() {
         let schema = XportSchema::builder()
-            .set_dataset_name("VS")
+            .dataset_name("VS")
             .add_variable({
                 let mut v = XportVariable::builder();
-                v.set_short_name("VSTESTCD")
-                    .set_value_type(SasVariableType::Character)
-                    .set_value_length(80);
+                v.short_name("VSTESTCD")
+                    .value_type(SasVariableType::Character)
+                    .value_length(80);
                 v
             })
             .try_build()
@@ -775,13 +775,13 @@ mod tests {
     #[test]
     fn round_trips_v8_single_dataset_with_count_wide() {
         let schema = XportSchema::builder()
-            .set_xport_dataset_version(XportDatasetVersion::V8)
-            .set_dataset_name("AE")
+            .xport_dataset_version(XportDatasetVersion::V8)
+            .dataset_name("AE")
             .add_variable({
                 let mut v = XportVariable::builder();
-                v.set_full_name("ADVERSE_EVENT_TERM")
-                    .set_value_type(SasVariableType::Character)
-                    .set_value_length(80);
+                v.full_name("ADVERSE_EVENT_TERM")
+                    .value_type(SasVariableType::Character)
+                    .value_length(80);
                 v
             })
             .try_build()
@@ -789,7 +789,7 @@ mod tests {
         // Record width: 80 (>= 80)
 
         let metadata = XportMetadata::builder()
-            .set_xport_file_version(XportFileVersion::V8)
+            .xport_file_version(XportFileVersion::V8)
             .build();
         let mut buffer = Cursor::new(Vec::new());
         let writer = XportWriter::from_writer(&mut buffer, metadata).unwrap();
@@ -821,31 +821,31 @@ mod tests {
     #[test]
     fn round_trips_v5_multiple_datasets_wide() {
         let schema1 = XportSchema::builder()
-            .set_dataset_name("DM")
+            .dataset_name("DM")
             .add_variable({
                 let mut v = XportVariable::builder();
-                v.set_short_name("SUBJID")
-                    .set_value_type(SasVariableType::Character)
-                    .set_value_length(80);
+                v.short_name("SUBJID")
+                    .value_type(SasVariableType::Character)
+                    .value_length(80);
                 v
             })
             .try_build()
             .unwrap();
 
         let schema2 = XportSchema::builder()
-            .set_dataset_name("AE")
+            .dataset_name("AE")
             .add_variable({
                 let mut v = XportVariable::builder();
-                v.set_short_name("AETERM")
-                    .set_value_type(SasVariableType::Character)
-                    .set_value_length(80);
+                v.short_name("AETERM")
+                    .value_type(SasVariableType::Character)
+                    .value_length(80);
                 v
             })
             .add_variable({
                 let mut v = XportVariable::builder();
-                v.set_short_name("AESEQ")
-                    .set_value_type(SasVariableType::Numeric)
-                    .set_value_length(8);
+                v.short_name("AESEQ")
+                    .value_type(SasVariableType::Numeric)
+                    .value_length(8);
                 v
             })
             .try_build()
@@ -895,26 +895,26 @@ mod tests {
     fn round_trips_v8_multiple_datasets_with_count_narrow() {
         // Sub-80-byte record width to exercise the narrow-record path.
         let schema1 = XportSchema::builder()
-            .set_xport_dataset_version(XportDatasetVersion::V8)
-            .set_dataset_name("DM")
+            .xport_dataset_version(XportDatasetVersion::V8)
+            .dataset_name("DM")
             .add_variable({
                 let mut v = XportVariable::builder();
-                v.set_short_name("SUBJID")
-                    .set_value_type(SasVariableType::Character)
-                    .set_value_length(8);
+                v.short_name("SUBJID")
+                    .value_type(SasVariableType::Character)
+                    .value_length(8);
                 v
             })
             .try_build()
             .unwrap();
 
         let schema2 = XportSchema::builder()
-            .set_xport_dataset_version(XportDatasetVersion::V8)
-            .set_dataset_name("VS")
+            .xport_dataset_version(XportDatasetVersion::V8)
+            .dataset_name("VS")
             .add_variable({
                 let mut v = XportVariable::builder();
-                v.set_short_name("VSTEST")
-                    .set_value_type(SasVariableType::Character)
-                    .set_value_length(20);
+                v.short_name("VSTEST")
+                    .value_type(SasVariableType::Character)
+                    .value_length(20);
                 v
             })
             .try_build()
@@ -922,7 +922,7 @@ mod tests {
         // Record widths: DS1 = 8, DS2 = 20 (both < 80)
 
         let metadata = XportMetadata::builder()
-            .set_xport_file_version(XportFileVersion::V8)
+            .xport_file_version(XportFileVersion::V8)
             .build();
         let mut buffer = Cursor::new(Vec::new());
         let writer = XportWriter::from_writer(&mut buffer, metadata).unwrap();
@@ -964,12 +964,12 @@ mod tests {
     #[test]
     fn round_trips_truncated_numeric_value_length_5() {
         let schema = XportSchema::builder()
-            .set_dataset_name("VS")
+            .dataset_name("VS")
             .add_variable({
                 let mut v = XportVariable::builder();
-                v.set_short_name("WEIGHT")
-                    .set_value_type(SasVariableType::Numeric)
-                    .set_value_length(5);
+                v.short_name("WEIGHT")
+                    .value_type(SasVariableType::Numeric)
+                    .value_length(5);
                 v
             })
             .try_build()
@@ -1007,12 +1007,12 @@ mod tests {
     #[test]
     fn reports_character_truncation_for_multibyte_value() {
         let schema = XportSchema::builder()
-            .set_dataset_name("DM")
+            .dataset_name("DM")
             .add_variable({
                 let mut v = XportVariable::builder();
-                v.set_short_name("RACE")
-                    .set_value_type(SasVariableType::Character)
-                    .set_value_length(8);
+                v.short_name("RACE")
+                    .value_type(SasVariableType::Character)
+                    .value_length(8);
                 v
             })
             .try_build()
@@ -1020,7 +1020,7 @@ mod tests {
 
         let mut buffer = Cursor::new(Vec::new());
         let writer = XportWriter::options()
-            .set_truncation_policy(SasVariableType::Character, TruncationPolicy::Report)
+            .truncation_policy(SasVariableType::Character, TruncationPolicy::Report)
             .from_writer(&mut buffer, XportMetadata::builder().build())
             .unwrap();
         let mut writer = writer.write_schema(schema).unwrap();
@@ -1038,12 +1038,12 @@ mod tests {
     #[test]
     fn silent_character_truncation_succeeds() {
         let schema = XportSchema::builder()
-            .set_dataset_name("DM")
+            .dataset_name("DM")
             .add_variable({
                 let mut v = XportVariable::builder();
-                v.set_short_name("RACE")
-                    .set_value_type(SasVariableType::Character)
-                    .set_value_length(8);
+                v.short_name("RACE")
+                    .value_type(SasVariableType::Character)
+                    .value_length(8);
                 v
             })
             .try_build()
@@ -1063,12 +1063,12 @@ mod tests {
     #[test]
     fn reports_numeric_truncation() {
         let schema = XportSchema::builder()
-            .set_dataset_name("VS")
+            .dataset_name("VS")
             .add_variable({
                 let mut v = XportVariable::builder();
-                v.set_short_name("VSSTRES")
-                    .set_value_type(SasVariableType::Numeric)
-                    .set_value_length(3);
+                v.short_name("VSSTRES")
+                    .value_type(SasVariableType::Numeric)
+                    .value_length(3);
                 v
             })
             .try_build()
@@ -1076,7 +1076,7 @@ mod tests {
 
         let mut buffer = Cursor::new(Vec::new());
         let writer = XportWriter::options()
-            .set_truncation_policy(SasVariableType::Numeric, TruncationPolicy::Report)
+            .truncation_policy(SasVariableType::Numeric, TruncationPolicy::Report)
             .from_writer(&mut buffer, XportMetadata::builder().build())
             .unwrap();
         let mut writer = writer.write_schema(schema).unwrap();
@@ -1094,12 +1094,12 @@ mod tests {
     #[test]
     fn silent_numeric_truncation_succeeds() {
         let schema = XportSchema::builder()
-            .set_dataset_name("VS")
+            .dataset_name("VS")
             .add_variable({
                 let mut v = XportVariable::builder();
-                v.set_short_name("VSSTRES")
-                    .set_value_type(SasVariableType::Numeric)
-                    .set_value_length(3);
+                v.short_name("VSSTRES")
+                    .value_type(SasVariableType::Numeric)
+                    .value_length(3);
                 v
             })
             .try_build()

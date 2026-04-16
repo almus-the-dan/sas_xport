@@ -58,7 +58,7 @@ impl XportReaderOptions {
 
     /// Sets the primary encoding of the file.
     #[inline]
-    pub fn set_encoding(&mut self, encoding: &'static Encoding) -> &mut Self {
+    pub fn encoding(&mut self, encoding: &'static Encoding) -> &mut Self {
         self.encoding = encoding;
         self
     }
@@ -220,7 +220,7 @@ mod tests {
     #[test]
     fn test_set_encoding() {
         let options = XportReaderOptions::default()
-            .set_encoding(encoding_rs::WINDOWS_1252)
+            .encoding(encoding_rs::WINDOWS_1252)
             .build();
         assert_eq!(options.encoding(), encoding_rs::WINDOWS_1252);
     }
@@ -248,7 +248,7 @@ mod tests {
     #[test]
     fn test_build_does_not_consume_builder() {
         let mut builder = XportReaderOptions::default();
-        builder.set_encoding(encoding_rs::WINDOWS_1252);
+        builder.encoding(encoding_rs::WINDOWS_1252);
         let first = builder.build();
         let second = builder.build();
         assert_eq!(first.encoding(), second.encoding());
@@ -257,7 +257,7 @@ mod tests {
     #[test]
     fn test_duplicate_of_primary_is_dropped() {
         let options = XportReaderOptions::default()
-            .set_encoding(encoding_rs::WINDOWS_1252)
+            .encoding(encoding_rs::WINDOWS_1252)
             .add_fallback_encoding(encoding_rs::WINDOWS_1252)
             .build();
         assert!(options.fallback_encodings().is_empty());
@@ -283,7 +283,7 @@ mod tests {
     #[test]
     fn test_distinct_fallback_is_preserved() {
         let options = XportReaderOptions::default()
-            .set_encoding(encoding_rs::UTF_8)
+            .encoding(encoding_rs::UTF_8)
             .add_fallback_encoding(encoding_rs::WINDOWS_1252)
             .build();
         assert_eq!(options.fallback_encodings(), &[encoding_rs::WINDOWS_1252]);

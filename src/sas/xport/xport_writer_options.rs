@@ -65,14 +65,14 @@ impl XportWriterOptions {
 
     /// Sets the encoding used for writing character values.
     #[inline]
-    pub fn set_encoding(&mut self, encoding: &'static Encoding) -> &mut Self {
+    pub fn encoding(&mut self, encoding: &'static Encoding) -> &mut Self {
         self.encoding = encoding;
         self
     }
 
     /// Sets the truncation policy for the given variable type.
     #[inline]
-    pub fn set_truncation_policy(
+    pub fn truncation_policy(
         &mut self,
         variable_type: SasVariableType,
         policy: TruncationPolicy,
@@ -241,9 +241,9 @@ mod tests {
     }
 
     #[test]
-    fn set_encoding() {
+    fn encoding() {
         let options = XportWriterOptions::default()
-            .set_encoding(encoding_rs::WINDOWS_1252)
+            .encoding(encoding_rs::WINDOWS_1252)
             .build();
         assert_eq!(options.encoding(), encoding_rs::WINDOWS_1252);
     }
@@ -251,7 +251,7 @@ mod tests {
     #[test]
     fn set_character_truncation_policy() {
         let options = XportWriterOptions::default()
-            .set_truncation_policy(SasVariableType::Character, TruncationPolicy::Report)
+            .truncation_policy(SasVariableType::Character, TruncationPolicy::Report)
             .build();
         assert_eq!(
             options.truncation_policy(SasVariableType::Character),
@@ -266,7 +266,7 @@ mod tests {
     #[test]
     fn set_numeric_truncation_policy() {
         let options = XportWriterOptions::default()
-            .set_truncation_policy(SasVariableType::Numeric, TruncationPolicy::Report)
+            .truncation_policy(SasVariableType::Numeric, TruncationPolicy::Report)
             .build();
         assert_eq!(
             options.truncation_policy(SasVariableType::Numeric),
@@ -281,8 +281,8 @@ mod tests {
     #[test]
     fn set_both_truncation_policies() {
         let options = XportWriterOptions::default()
-            .set_truncation_policy(SasVariableType::Character, TruncationPolicy::Report)
-            .set_truncation_policy(SasVariableType::Numeric, TruncationPolicy::Report)
+            .truncation_policy(SasVariableType::Character, TruncationPolicy::Report)
+            .truncation_policy(SasVariableType::Numeric, TruncationPolicy::Report)
             .build();
         assert_eq!(
             options.truncation_policy(SasVariableType::Character),
@@ -297,7 +297,7 @@ mod tests {
     #[test]
     fn build_does_not_consume_builder() {
         let mut builder = XportWriterOptions::default();
-        builder.set_encoding(encoding_rs::WINDOWS_1252);
+        builder.encoding(encoding_rs::WINDOWS_1252);
         let first = builder.build();
         let second = builder.build();
         assert_eq!(first.encoding(), second.encoding());

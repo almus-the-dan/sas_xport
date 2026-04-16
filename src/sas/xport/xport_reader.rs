@@ -63,7 +63,7 @@ impl XportReader<BufReader<File>> {
     ///
     /// ```rust,ignore
     /// let reader = XportReader::options()
-    ///     .set_encoding(encoding_rs::WINDOWS_1252)
+    ///     .encoding(encoding_rs::WINDOWS_1252)
     ///     .from_path("data.xpt")?;
     /// ```
     #[inline]

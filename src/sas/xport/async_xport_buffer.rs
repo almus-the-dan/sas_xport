@@ -66,7 +66,7 @@ impl<R: AsyncBufRead + Unpin> AsyncXportBuffer<R> {
         let mut header = [0u8; HEADER_LENGTH];
         let mut builder = XportMetadata::builder();
         let file_version = self.read_library_header(&mut header).await?;
-        builder.set_xport_file_version(file_version);
+        builder.xport_file_version(file_version);
         self.read_real_headers(&mut builder, &mut header).await?;
         Ok(builder.into())
     }
@@ -210,7 +210,7 @@ impl<R: AsyncBufRead + Unpin> AsyncXportBuffer<R> {
             return Ok(None);
         };
         let mut builder = XportSchema::builder();
-        builder.set_variable_descriptor_length(descriptor_length);
+        builder.variable_descriptor_length(descriptor_length);
         self.read_descriptor_header(file_version, &mut header)
             .await?;
         self.read_member_line1(file_version, &mut builder, &mut header)
@@ -227,8 +227,8 @@ impl<R: AsyncBufRead + Unpin> AsyncXportBuffer<R> {
             builder.add_variable(variable_builder);
         }
         builder
-            .set_xport_dataset_version(dataset_version)
-            .set_record_count(record_count);
+            .xport_dataset_version(dataset_version)
+            .record_count(record_count);
 
         let schema = builder.try_into().map_err(|e| {
             XportError::of_kind(

@@ -12,7 +12,7 @@ impl<'a> Cursor<'a> {
         }
     }
 
-    pub fn set_position(&mut self, position: usize) {
+    pub fn position(&mut self, position: usize) {
         self.position = position;
     }
 
@@ -69,7 +69,7 @@ mod tests {
     #[test]
     fn set_position_changes_read_offset() {
         let mut cursor = Cursor::new(b"ABCDEF");
-        cursor.set_position(4);
+        cursor.position(4);
         assert_eq!(4, cursor.position);
         assert_eq!(b"EF", cursor.read(2));
         assert_eq!(6, cursor.position);
@@ -80,7 +80,7 @@ mod tests {
         let mut cursor = Cursor::new(b"ABCDEF");
         cursor.read(4);
         assert_eq!(4, cursor.position);
-        cursor.set_position(0);
+        cursor.position(0);
         assert_eq!(0, cursor.position);
         assert_eq!(b"AB", cursor.read(2));
         assert_eq!(2, cursor.position);

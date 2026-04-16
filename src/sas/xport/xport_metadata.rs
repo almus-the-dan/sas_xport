@@ -129,28 +129,28 @@ impl XportMetadataBuilder {
 
     /// Sets the SAS® transport file version.
     #[inline]
-    pub fn set_xport_file_version(&mut self, file_version: XportFileVersion) -> &mut Self {
+    pub fn xport_file_version(&mut self, file_version: XportFileVersion) -> &mut Self {
         self.file_version = file_version;
         self
     }
 
     /// Sets symbol 1. This is usually the value "SAS".
     #[inline]
-    pub fn set_symbol1(&mut self, symbol1: impl Into<String>) -> &mut Self {
+    pub fn symbol1(&mut self, symbol1: impl Into<String>) -> &mut Self {
         self.symbol1 = symbol1.into();
         self
     }
 
     /// Sets symbol 2. This is usually the value "SAS".
     #[inline]
-    pub fn set_symbol2(&mut self, symbol2: impl Into<String>) -> &mut Self {
+    pub fn symbol2(&mut self, symbol2: impl Into<String>) -> &mut Self {
         self.symbol2 = symbol2.into();
         self
     }
 
     /// Sets the library value. This is usually "SASLIB".
     #[inline]
-    pub fn set_library(&mut self, library: impl Into<String>) -> &mut Self {
+    pub fn library(&mut self, library: impl Into<String>) -> &mut Self {
         self.library = library.into();
         self
     }
@@ -158,7 +158,7 @@ impl XportMetadataBuilder {
     /// Sets the SAS® version. This is usually the specific version of the SAS®
     /// environment generating the file.
     #[inline]
-    pub fn set_sas_version(&mut self, sas_version: impl Into<String>) -> &mut Self {
+    pub fn sas_version(&mut self, sas_version: impl Into<String>) -> &mut Self {
         self.sas_version = Some(sas_version.into());
         self
     }
@@ -173,21 +173,21 @@ impl XportMetadataBuilder {
 
     /// Sets the operating system the SAS® environment ran on.
     #[inline]
-    pub fn set_operating_system(&mut self, operating_system: impl Into<String>) -> &mut Self {
+    pub fn operating_system(&mut self, operating_system: impl Into<String>) -> &mut Self {
         self.operating_system = operating_system.into();
         self
     }
 
     /// Sets the creation date of the file.
     #[inline]
-    pub fn set_created(&mut self, created: SasDateTime) -> &mut Self {
+    pub fn created(&mut self, created: SasDateTime) -> &mut Self {
         self.created = created;
         self
     }
 
     /// Sets the last modified date of the file.
     #[inline]
-    pub fn set_modified(&mut self, modified: SasDateTime) -> &mut Self {
+    pub fn modified(&mut self, modified: SasDateTime) -> &mut Self {
         self.modified = modified;
         self
     }
@@ -248,9 +248,9 @@ mod chrono_tests {
             .unwrap()
             .into();
         let metadata = XportMetadata::builder()
-            .set_operating_system(os)
-            .set_created(created)
-            .set_modified(modified)
+            .operating_system(os)
+            .created(created)
+            .modified(modified)
             .build();
         assert_eq!(XportFileVersion::V5, metadata.file_version());
         assert_eq!(XportMetadata::DEFAULT_SYMBOL1, metadata.symbol1());
@@ -291,7 +291,7 @@ mod tests {
     #[test]
     fn v8_builder_defaults_sas_version() {
         let metadata = XportMetadata::builder()
-            .set_xport_file_version(XportFileVersion::V8)
+            .xport_file_version(XportFileVersion::V8)
             .build();
         assert_eq!(XportFileVersion::V8, metadata.file_version());
         assert_eq!(

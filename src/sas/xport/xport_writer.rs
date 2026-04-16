@@ -80,7 +80,7 @@ impl XportWriter {
     ///
     /// ```rust,ignore
     /// let writer = XportWriter::options()
-    ///     .set_encoding(encoding_rs::WINDOWS_1252)
+    ///     .encoding(encoding_rs::WINDOWS_1252)
     ///     .from_path("out.xpt", metadata)?;
     /// ```
     #[inline]

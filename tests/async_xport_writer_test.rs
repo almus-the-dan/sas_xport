@@ -46,13 +46,13 @@ mod tests {
             .second(0)
             .build();
         let metadata = XportMetadata::builder()
-            .set_symbol1("SAS")
-            .set_symbol2("SAS")
-            .set_library("MYLIB")
-            .set_sas_version("9.4")
-            .set_operating_system("Linux")
-            .set_created(created)
-            .set_modified(modified)
+            .symbol1("SAS")
+            .symbol2("SAS")
+            .library("MYLIB")
+            .sas_version("9.4")
+            .operating_system("Linux")
+            .created(created)
+            .modified(modified)
             .build();
 
         let mut buffer = std::io::Cursor::new(Vec::new());
@@ -78,12 +78,12 @@ mod tests {
     #[tokio::test]
     async fn round_trips_v8_metadata() {
         let metadata = XportMetadata::builder()
-            .set_xport_file_version(XportFileVersion::V8)
-            .set_symbol1("TST")
-            .set_symbol2("XPT")
-            .set_library("SASLIB")
-            .set_sas_version("9.1")
-            .set_operating_system("WinXP")
+            .xport_file_version(XportFileVersion::V8)
+            .symbol1("TST")
+            .symbol2("XPT")
+            .library("SASLIB")
+            .sas_version("9.1")
+            .operating_system("WinXP")
             .build();
 
         let mut buffer = std::io::Cursor::new(Vec::new());
@@ -107,19 +107,19 @@ mod tests {
     #[tokio::test]
     async fn round_trips_v5_single_dataset_with_records() {
         let schema = XportSchema::builder()
-            .set_dataset_name("DM")
+            .dataset_name("DM")
             .add_variable({
                 let mut v = XportVariable::builder();
-                v.set_short_name("STUDYID")
-                    .set_value_type(SasVariableType::Character)
-                    .set_value_length(8);
+                v.short_name("STUDYID")
+                    .value_type(SasVariableType::Character)
+                    .value_length(8);
                 v
             })
             .add_variable({
                 let mut v = XportVariable::builder();
-                v.set_short_name("AGE")
-                    .set_value_type(SasVariableType::Numeric)
-                    .set_value_length(8);
+                v.short_name("AGE")
+                    .value_type(SasVariableType::Numeric)
+                    .value_length(8);
                 v
             })
             .try_build()
@@ -161,26 +161,26 @@ mod tests {
     #[tokio::test]
     async fn round_trips_v5_single_dataset_with_records_wide() {
         let schema = XportSchema::builder()
-            .set_dataset_name("DM")
+            .dataset_name("DM")
             .add_variable({
                 let mut v = XportVariable::builder();
-                v.set_short_name("STUDYID")
-                    .set_value_type(SasVariableType::Character)
-                    .set_value_length(40);
+                v.short_name("STUDYID")
+                    .value_type(SasVariableType::Character)
+                    .value_length(40);
                 v
             })
             .add_variable({
                 let mut v = XportVariable::builder();
-                v.set_short_name("USUBJID")
-                    .set_value_type(SasVariableType::Character)
-                    .set_value_length(40);
+                v.short_name("USUBJID")
+                    .value_type(SasVariableType::Character)
+                    .value_length(40);
                 v
             })
             .add_variable({
                 let mut v = XportVariable::builder();
-                v.set_short_name("AGE")
-                    .set_value_type(SasVariableType::Numeric)
-                    .set_value_length(8);
+                v.short_name("AGE")
+                    .value_type(SasVariableType::Numeric)
+                    .value_length(8);
                 v
             })
             .try_build()
@@ -232,20 +232,20 @@ mod tests {
     #[tokio::test]
     async fn round_trips_v8_single_dataset_with_count() {
         let schema = XportSchema::builder()
-            .set_xport_dataset_version(XportDatasetVersion::V8)
-            .set_dataset_name("AE")
+            .xport_dataset_version(XportDatasetVersion::V8)
+            .dataset_name("AE")
             .add_variable({
                 let mut v = XportVariable::builder();
-                v.set_full_name("ADVERSE_EVENT_TERM")
-                    .set_value_type(SasVariableType::Character)
-                    .set_value_length(40);
+                v.full_name("ADVERSE_EVENT_TERM")
+                    .value_type(SasVariableType::Character)
+                    .value_length(40);
                 v
             })
             .try_build()
             .unwrap();
 
         let metadata = XportMetadata::builder()
-            .set_xport_file_version(XportFileVersion::V8)
+            .xport_file_version(XportFileVersion::V8)
             .build();
         let mut buffer = std::io::Cursor::new(Vec::new());
         let writer = AsyncXportWriter::from_writer(&mut buffer, metadata)
@@ -290,13 +290,13 @@ mod tests {
     #[tokio::test]
     async fn round_trips_v8_single_dataset_with_count_wide() {
         let schema = XportSchema::builder()
-            .set_xport_dataset_version(XportDatasetVersion::V8)
-            .set_dataset_name("AE")
+            .xport_dataset_version(XportDatasetVersion::V8)
+            .dataset_name("AE")
             .add_variable({
                 let mut v = XportVariable::builder();
-                v.set_full_name("ADVERSE_EVENT_TERM")
-                    .set_value_type(SasVariableType::Character)
-                    .set_value_length(80);
+                v.full_name("ADVERSE_EVENT_TERM")
+                    .value_type(SasVariableType::Character)
+                    .value_length(80);
                 v
             })
             .try_build()
@@ -304,7 +304,7 @@ mod tests {
         // Record width: 80 (>= 80)
 
         let metadata = XportMetadata::builder()
-            .set_xport_file_version(XportFileVersion::V8)
+            .xport_file_version(XportFileVersion::V8)
             .build();
         let mut buffer = std::io::Cursor::new(Vec::new());
         let writer = AsyncXportWriter::from_writer(&mut buffer, metadata)
@@ -345,31 +345,31 @@ mod tests {
     #[tokio::test]
     async fn round_trips_v5_multiple_datasets() {
         let schema1 = XportSchema::builder()
-            .set_dataset_name("DM")
+            .dataset_name("DM")
             .add_variable({
                 let mut v = XportVariable::builder();
-                v.set_short_name("SUBJID")
-                    .set_value_type(SasVariableType::Character)
-                    .set_value_length(8);
+                v.short_name("SUBJID")
+                    .value_type(SasVariableType::Character)
+                    .value_length(8);
                 v
             })
             .try_build()
             .unwrap();
 
         let schema2 = XportSchema::builder()
-            .set_dataset_name("AE")
+            .dataset_name("AE")
             .add_variable({
                 let mut v = XportVariable::builder();
-                v.set_short_name("AETERM")
-                    .set_value_type(SasVariableType::Character)
-                    .set_value_length(20);
+                v.short_name("AETERM")
+                    .value_type(SasVariableType::Character)
+                    .value_length(20);
                 v
             })
             .add_variable({
                 let mut v = XportVariable::builder();
-                v.set_short_name("AESEQ")
-                    .set_value_type(SasVariableType::Numeric)
-                    .set_value_length(8);
+                v.short_name("AESEQ")
+                    .value_type(SasVariableType::Numeric)
+                    .value_length(8);
                 v
             })
             .try_build()
@@ -431,33 +431,33 @@ mod tests {
         // Use a character variable with length >= 80 to avoid the narrow-record
         // ambiguity in the reader's blank-row look-ahead.
         let schema1 = XportSchema::builder()
-            .set_xport_dataset_version(XportDatasetVersion::V8)
-            .set_dataset_name("DM")
+            .xport_dataset_version(XportDatasetVersion::V8)
+            .dataset_name("DM")
             .add_variable({
                 let mut v = XportVariable::builder();
-                v.set_short_name("SUBJID")
-                    .set_value_type(SasVariableType::Character)
-                    .set_value_length(80);
+                v.short_name("SUBJID")
+                    .value_type(SasVariableType::Character)
+                    .value_length(80);
                 v
             })
             .try_build()
             .unwrap();
 
         let schema2 = XportSchema::builder()
-            .set_xport_dataset_version(XportDatasetVersion::V8)
-            .set_dataset_name("VS")
+            .xport_dataset_version(XportDatasetVersion::V8)
+            .dataset_name("VS")
             .add_variable({
                 let mut v = XportVariable::builder();
-                v.set_short_name("VSTEST")
-                    .set_value_type(SasVariableType::Character)
-                    .set_value_length(80);
+                v.short_name("VSTEST")
+                    .value_type(SasVariableType::Character)
+                    .value_length(80);
                 v
             })
             .try_build()
             .unwrap();
 
         let metadata = XportMetadata::builder()
-            .set_xport_file_version(XportFileVersion::V8)
+            .xport_file_version(XportFileVersion::V8)
             .build();
         let mut buffer = std::io::Cursor::new(Vec::new());
         let writer = AsyncXportWriter::from_writer(&mut buffer, metadata)
@@ -509,26 +509,26 @@ mod tests {
     async fn round_trips_v8_multiple_datasets_with_count_narrow() {
         // Sub-80-byte record width to exercise the narrow-record path.
         let schema1 = XportSchema::builder()
-            .set_xport_dataset_version(XportDatasetVersion::V8)
-            .set_dataset_name("DM")
+            .xport_dataset_version(XportDatasetVersion::V8)
+            .dataset_name("DM")
             .add_variable({
                 let mut v = XportVariable::builder();
-                v.set_short_name("SUBJID")
-                    .set_value_type(SasVariableType::Character)
-                    .set_value_length(8);
+                v.short_name("SUBJID")
+                    .value_type(SasVariableType::Character)
+                    .value_length(8);
                 v
             })
             .try_build()
             .unwrap();
 
         let schema2 = XportSchema::builder()
-            .set_xport_dataset_version(XportDatasetVersion::V8)
-            .set_dataset_name("VS")
+            .xport_dataset_version(XportDatasetVersion::V8)
+            .dataset_name("VS")
             .add_variable({
                 let mut v = XportVariable::builder();
-                v.set_short_name("VSTEST")
-                    .set_value_type(SasVariableType::Character)
-                    .set_value_length(20);
+                v.short_name("VSTEST")
+                    .value_type(SasVariableType::Character)
+                    .value_length(20);
                 v
             })
             .try_build()
@@ -536,7 +536,7 @@ mod tests {
         // Record widths: DS1 = 8, DS2 = 20 (both < 80)
 
         let metadata = XportMetadata::builder()
-            .set_xport_file_version(XportFileVersion::V8)
+            .xport_file_version(XportFileVersion::V8)
             .build();
         let mut buffer = std::io::Cursor::new(Vec::new());
         let writer = AsyncXportWriter::from_writer(&mut buffer, metadata)
@@ -587,12 +587,12 @@ mod tests {
     #[tokio::test]
     async fn reports_character_truncation_for_multibyte_value() {
         let schema = XportSchema::builder()
-            .set_dataset_name("DM")
+            .dataset_name("DM")
             .add_variable({
                 let mut v = XportVariable::builder();
-                v.set_short_name("RACE")
-                    .set_value_type(SasVariableType::Character)
-                    .set_value_length(8);
+                v.short_name("RACE")
+                    .value_type(SasVariableType::Character)
+                    .value_length(8);
                 v
             })
             .try_build()
@@ -600,7 +600,7 @@ mod tests {
 
         let mut buffer = std::io::Cursor::new(Vec::new());
         let writer = AsyncXportWriter::options()
-            .set_truncation_policy(SasVariableType::Character, TruncationPolicy::Report)
+            .truncation_policy(SasVariableType::Character, TruncationPolicy::Report)
             .from_tokio_writer(&mut buffer, XportMetadata::builder().build())
             .await
             .unwrap();
@@ -621,12 +621,12 @@ mod tests {
     #[tokio::test]
     async fn silent_character_truncation_succeeds() {
         let schema = XportSchema::builder()
-            .set_dataset_name("DM")
+            .dataset_name("DM")
             .add_variable({
                 let mut v = XportVariable::builder();
-                v.set_short_name("RACE")
-                    .set_value_type(SasVariableType::Character)
-                    .set_value_length(8);
+                v.short_name("RACE")
+                    .value_type(SasVariableType::Character)
+                    .value_length(8);
                 v
             })
             .try_build()
@@ -648,12 +648,12 @@ mod tests {
     #[tokio::test]
     async fn reports_numeric_truncation() {
         let schema = XportSchema::builder()
-            .set_dataset_name("VS")
+            .dataset_name("VS")
             .add_variable({
                 let mut v = XportVariable::builder();
-                v.set_short_name("VSSTRES")
-                    .set_value_type(SasVariableType::Numeric)
-                    .set_value_length(3);
+                v.short_name("VSSTRES")
+                    .value_type(SasVariableType::Numeric)
+                    .value_length(3);
                 v
             })
             .try_build()
@@ -661,7 +661,7 @@ mod tests {
 
         let mut buffer = std::io::Cursor::new(Vec::new());
         let writer = AsyncXportWriter::options()
-            .set_truncation_policy(SasVariableType::Numeric, TruncationPolicy::Report)
+            .truncation_policy(SasVariableType::Numeric, TruncationPolicy::Report)
             .from_tokio_writer(&mut buffer, XportMetadata::builder().build())
             .await
             .unwrap();
@@ -680,12 +680,12 @@ mod tests {
     #[tokio::test]
     async fn silent_numeric_truncation_succeeds() {
         let schema = XportSchema::builder()
-            .set_dataset_name("VS")
+            .dataset_name("VS")
             .add_variable({
                 let mut v = XportVariable::builder();
-                v.set_short_name("VSSTRES")
-                    .set_value_type(SasVariableType::Numeric)
-                    .set_value_length(3);
+                v.short_name("VSSTRES")
+                    .value_type(SasVariableType::Numeric)
+                    .value_length(3);
                 v
             })
             .try_build()

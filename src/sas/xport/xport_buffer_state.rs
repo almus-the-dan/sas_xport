@@ -74,12 +74,12 @@ impl XportBufferState {
             .map_err(|e| {
                 XportError::encoding("Failed to read symbol1 from the metadata header record", e)
             })?;
-        builder.set_symbol1(symbol1);
+        builder.symbol1(symbol1);
         let symbol2 = converter::read_trimmed_string(cursor.read(8), &self.metadata_decoder)
             .map_err(|e| {
                 XportError::encoding("Failed to read symbol2 from the metadata header record", e)
             })?;
-        builder.set_symbol2(symbol2);
+        builder.symbol2(symbol2);
         let library = converter::read_trimmed_string(cursor.read(8), &self.metadata_decoder)
             .map_err(|e| {
                 XportError::encoding(
@@ -87,7 +87,7 @@ impl XportBufferState {
                     e,
                 )
             })?;
-        builder.set_library(library);
+        builder.library(library);
         let sas_version = converter::read_trimmed_string(cursor.read(8), &self.metadata_decoder)
             .map_err(|e| {
                 XportError::encoding(
@@ -95,7 +95,7 @@ impl XportBufferState {
                     e,
                 )
             })?;
-        builder.set_sas_version(sas_version);
+        builder.sas_version(sas_version);
         let operating_system =
             converter::read_trimmed_string(cursor.read(8), &self.metadata_decoder).map_err(
                 |e| {
@@ -105,8 +105,8 @@ impl XportBufferState {
                     )
                 },
             )?;
-        builder.set_operating_system(operating_system);
-        cursor.set_position(64);
+        builder.operating_system(operating_system);
+        cursor.position(64);
         let created = converter::read_date_time(cursor.read(16)).map_err(|e| {
             XportError::of_kind(
                 XportErrorKind::InvalidDateTime,
@@ -114,7 +114,7 @@ impl XportBufferState {
             )
             .with_source(e)
         })?;
-        builder.set_created(created);
+        builder.created(created);
 
         Ok(())
     }
@@ -132,7 +132,7 @@ impl XportBufferState {
             )
             .with_source(e)
         })?;
-        builder.set_modified(modified);
+        builder.modified(modified);
         Ok(())
     }
 
@@ -198,7 +198,7 @@ impl XportBufferState {
             .map_err(|e| {
                 XportError::encoding("Failed to read the format from the member data header", e)
             })?;
-        builder.set_format(format);
+        builder.format(format);
         let name_length = if file_version == XportFileVersion::V8 {
             32
         } else {
@@ -212,17 +212,17 @@ impl XportBufferState {
                         e,
                     )
                 })?;
-        builder.set_dataset_name(dataset_name);
+        builder.dataset_name(dataset_name);
         let sas_data = converter::read_trimmed_string(cursor.read(8), &self.metadata_decoder)
             .map_err(|e| {
                 XportError::encoding("Failed to read SASDATA from the member data header", e)
             })?;
-        builder.set_sas_data(sas_data);
+        builder.sas_data(sas_data);
         let sas_version = converter::read_trimmed_string(cursor.read(8), &self.metadata_decoder)
             .map_err(|e| {
                 XportError::encoding("Failed to read the version from the member data header", e)
             })?;
-        builder.set_version(sas_version);
+        builder.version(sas_version);
         let operating_system =
             converter::read_trimmed_string(cursor.read(8), &self.metadata_decoder).map_err(
                 |e| {
@@ -232,8 +232,8 @@ impl XportBufferState {
                     )
                 },
             )?;
-        builder.set_operating_system(operating_system);
-        cursor.set_position(64);
+        builder.operating_system(operating_system);
+        cursor.position(64);
         let created = converter::read_date_time(cursor.read(16)).map_err(|e| {
             XportError::of_kind(
                 XportErrorKind::InvalidDateTime,
@@ -241,7 +241,7 @@ impl XportBufferState {
             )
             .with_source(e)
         })?;
-        builder.set_created(created);
+        builder.created(created);
 
         Ok(())
     }
@@ -255,7 +255,7 @@ impl XportBufferState {
 
         let modified = converter::read_date_time(&header[..16])
             .map_err(|e| XportError::of_kind(XportErrorKind::InvalidDateTime, "Encountered an invalid modification date/time while parsing the member data header").with_source(e))?;
-        builder.set_modified(modified);
+        builder.modified(modified);
         let dataset_label = converter::read_trimmed_string(&header[32..72], &self.metadata_decoder)
             .map_err(|e| {
                 XportError::encoding(
@@ -263,7 +263,7 @@ impl XportBufferState {
                     e,
                 )
             })?;
-        builder.set_dataset_label(dataset_label);
+        builder.dataset_label(dataset_label);
         let dataset_type = converter::read_trimmed_string(&header[72..80], &self.metadata_decoder)
             .map_err(|e| {
                 XportError::encoding(
@@ -271,7 +271,7 @@ impl XportBufferState {
                     e,
                 )
             })?;
-        builder.set_dataset_type(dataset_type);
+        builder.dataset_type(dataset_type);
 
         Ok(())
     }
@@ -326,10 +326,10 @@ impl XportBufferState {
                     variable_error("Invalid variable type code", variable_index),
                 )
             })?;
-        variable_builder.set_value_type(value_type);
-        variable_builder.set_hash(converter::read_u16(&buffer[2..4]));
-        variable_builder.set_value_length(converter::read_u16(&buffer[4..6]));
-        variable_builder.set_number(converter::read_u16(&buffer[6..8]));
+        variable_builder.value_type(value_type);
+        variable_builder.hash(converter::read_u16(&buffer[2..4]));
+        variable_builder.value_length(converter::read_u16(&buffer[4..6]));
+        variable_builder.number(converter::read_u16(&buffer[6..8]));
         let short_name = converter::read_trimmed_string(&buffer[8..16], &self.metadata_decoder)
             .map_err(|e| {
                 XportError::encoding(
@@ -337,7 +337,7 @@ impl XportBufferState {
                     e,
                 )
             })?;
-        variable_builder.set_short_name(short_name);
+        variable_builder.short_name(short_name);
         let short_label = converter::read_trimmed_string(&buffer[16..56], &self.metadata_decoder)
             .map_err(|e| {
             XportError::encoding(
@@ -345,7 +345,7 @@ impl XportBufferState {
                 e,
             )
         })?;
-        variable_builder.set_short_label(short_label);
+        variable_builder.short_label(short_label);
         let short_format = converter::read_trimmed_string(&buffer[56..64], &self.metadata_decoder)
             .map_err(|e| {
                 XportError::encoding(
@@ -353,9 +353,9 @@ impl XportBufferState {
                     e,
                 )
             })?;
-        variable_builder.set_short_format(short_format);
-        variable_builder.set_format_length(converter::read_u16(&buffer[64..66]));
-        variable_builder.set_format_precision(converter::read_u16(&buffer[66..68]));
+        variable_builder.short_format(short_format);
+        variable_builder.format_length(converter::read_u16(&buffer[64..66]));
+        variable_builder.format_precision(converter::read_u16(&buffer[66..68]));
         let justification = SasJustification::try_from_u16(converter::read_u16(&buffer[68..70]))
             .ok_or_else(|| {
                 XportError::of_kind(
@@ -363,7 +363,7 @@ impl XportBufferState {
                     variable_error("Invalid justification code", variable_index),
                 )
             })?;
-        variable_builder.set_justification(justification);
+        variable_builder.justification(justification);
         let short_input_format =
             converter::read_trimmed_string(&buffer[72..80], &self.metadata_decoder).map_err(
                 |e| {
@@ -373,10 +373,10 @@ impl XportBufferState {
                     )
                 },
             )?;
-        variable_builder.set_short_input_format(short_input_format);
-        variable_builder.set_input_format_length(converter::read_u16(&buffer[80..82]));
-        variable_builder.set_input_format_precision(converter::read_u16(&buffer[82..84]));
-        variable_builder.set_position(converter::read_u32(&buffer[84..88]));
+        variable_builder.short_input_format(short_input_format);
+        variable_builder.input_format_length(converter::read_u16(&buffer[80..82]));
+        variable_builder.input_format_precision(converter::read_u16(&buffer[82..84]));
+        variable_builder.position(converter::read_u32(&buffer[84..88]));
 
         if file_version == XportFileVersion::V8 {
             let medium_name_end_index =
@@ -391,7 +391,7 @@ impl XportBufferState {
                     e,
                 )
             })?;
-            variable_builder.set_medium_name(medium_name);
+            variable_builder.medium_name(medium_name);
         }
 
         Ok(variable_builder)
@@ -536,7 +536,7 @@ impl XportBufferState {
                     e,
                 )
             })?;
-        variable_builder.set_long_name(long_name);
+        variable_builder.long_name(long_name);
         let long_label =
             converter::read_trimmed_string(cursor.read(extension.label()), &self.metadata_decoder)
                 .map_err(|e| {
@@ -545,7 +545,7 @@ impl XportBufferState {
                         e,
                     )
                 })?;
-        variable_builder.set_long_label(long_label);
+        variable_builder.long_label(long_label);
         if include_formats {
             let long_format = converter::read_trimmed_string(
                 cursor.read(extension.format()),
@@ -557,7 +557,7 @@ impl XportBufferState {
                     e,
                 )
             })?;
-            variable_builder.set_long_format(long_format);
+            variable_builder.long_format(long_format);
             let long_input_format = converter::read_trimmed_string(
                 cursor.read(extension.input_format()),
                 &self.metadata_decoder,
@@ -570,7 +570,7 @@ impl XportBufferState {
                     e,
                 )
             })?;
-            variable_builder.set_long_input_format(long_input_format);
+            variable_builder.long_input_format(long_input_format);
         }
         Ok(extension_buffer.len())
     }
@@ -1387,20 +1387,20 @@ mod tests {
         // and verify the result matches the original. Each value appears once.
         let mut state = make_state();
         let expected = XportVariable::builder()
-            .set_value_type(SasVariableType::Character)
-            .set_hash(0)
-            .set_value_length(20)
-            .set_number(1)
-            .set_short_name("STUDYID")
-            .set_short_label("Study Identifier")
-            .set_short_format("")
-            .set_format_length(0)
-            .set_format_precision(0)
-            .set_justification(SasJustification::Left)
-            .set_short_input_format("")
-            .set_input_format_length(0)
-            .set_input_format_precision(0)
-            .set_position(0)
+            .value_type(SasVariableType::Character)
+            .hash(0)
+            .value_length(20)
+            .number(1)
+            .short_name("STUDYID")
+            .short_label("Study Identifier")
+            .short_format("")
+            .format_length(0)
+            .format_precision(0)
+            .justification(SasJustification::Left)
+            .short_input_format("")
+            .input_format_length(0)
+            .input_format_precision(0)
+            .position(0)
             .build();
         let buf = make_variable_descriptor(&expected, false);
         let actual = state
@@ -1415,16 +1415,16 @@ mod tests {
         // A numeric variable with a format, precision, and right justification.
         let mut state = make_state();
         let expected = XportVariable::builder()
-            .set_value_type(SasVariableType::Numeric)
-            .set_value_length(8)
-            .set_number(5)
-            .set_short_name("AESTDY")
-            .set_short_label("Study Day of AE Start")
-            .set_short_format("BEST")
-            .set_format_length(12)
-            .set_format_precision(2)
-            .set_justification(SasJustification::Right)
-            .set_position(80)
+            .value_type(SasVariableType::Numeric)
+            .value_length(8)
+            .number(5)
+            .short_name("AESTDY")
+            .short_label("Study Day of AE Start")
+            .short_format("BEST")
+            .format_length(12)
+            .format_precision(2)
+            .justification(SasJustification::Right)
+            .position(80)
             .build();
         let buf = make_variable_descriptor(&expected, false);
         let actual = state
@@ -1439,11 +1439,11 @@ mod tests {
         // V8 variable descriptors include a 32-byte medium name at offset 88.
         let mut state = make_state();
         let expected = XportVariable::builder()
-            .set_value_type(SasVariableType::Character)
-            .set_value_length(8)
-            .set_number(1)
-            .set_short_name("varnameg")
-            .set_medium_name("varnamegreaterthan8")
+            .value_type(SasVariableType::Character)
+            .value_length(8)
+            .number(1)
+            .short_name("varnameg")
+            .medium_name("varnamegreaterthan8")
             .build();
         let buf = make_variable_descriptor(&expected, true);
         let actual = state
@@ -1471,10 +1471,10 @@ mod tests {
         // Justification code 5 is not valid (only 0=Left and 1=Right).
         let mut state = make_state();
         let variable = XportVariable::builder()
-            .set_value_type(SasVariableType::Character)
-            .set_value_length(8)
-            .set_number(1)
-            .set_short_name("TEST")
+            .value_type(SasVariableType::Character)
+            .value_length(8)
+            .number(1)
+            .short_name("TEST")
             .build();
         let mut buf = make_variable_descriptor(&variable, false);
         write_u16_be(&mut buf, 68, 5); // Invalid justification

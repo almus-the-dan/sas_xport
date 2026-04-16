@@ -77,7 +77,7 @@ impl AsyncXportWriter {
     ///
     /// ```rust,ignore
     /// let writer = AsyncXportWriter::options()
-    ///     .set_encoding(encoding_rs::WINDOWS_1252)
+    ///     .encoding(encoding_rs::WINDOWS_1252)
     ///     .from_tokio_path("out.xpt", metadata).await?;
     /// ```
     #[inline]

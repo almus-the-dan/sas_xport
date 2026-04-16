@@ -192,6 +192,7 @@ impl Default for XportSchemaBuilder {
 }
 
 impl XportSchemaBuilder {
+    #[must_use]
     fn new(timestamp: SasDateTime) -> Self {
         // In the default schema we leave the variable map empty. We track new variables in a Vec
         // within the builder and then construct a separate variable map when building.
@@ -214,7 +215,7 @@ impl XportSchemaBuilder {
 
     /// Sets the transport format version for this dataset.
     #[inline]
-    pub fn set_xport_dataset_version(
+    pub fn xport_dataset_version(
         &mut self,
         xport_dataset_version: XportDatasetVersion,
     ) -> &mut Self {
@@ -224,70 +225,70 @@ impl XportSchemaBuilder {
 
     /// Sets the variable descriptor length, in bytes. This should be at most a 4-digit number.
     #[inline]
-    pub fn set_variable_descriptor_length(&mut self, variable_descriptor_length: u16) -> &mut Self {
+    pub fn variable_descriptor_length(&mut self, variable_descriptor_length: u16) -> &mut Self {
         self.variable_descriptor_length = variable_descriptor_length;
         self
     }
 
     /// Sets the format, which is usually "SAS".
     #[inline]
-    pub fn set_format(&mut self, format: impl Into<String>) -> &mut Self {
+    pub fn format(&mut self, format: impl Into<String>) -> &mut Self {
         self.format = format.into();
         self
     }
 
     /// Sets the name of the dataset, which will be truncated to 8 bytes, at most.
     #[inline]
-    pub fn set_dataset_name(&mut self, dataset_name: impl Into<String>) -> &mut Self {
+    pub fn dataset_name(&mut self, dataset_name: impl Into<String>) -> &mut Self {
         self.dataset_name = dataset_name.into();
         self
     }
 
     /// Sets the SAS data value, which is usually "SASDATA".
     #[inline]
-    pub fn set_sas_data(&mut self, sas_data: impl Into<String>) -> &mut Self {
+    pub fn sas_data(&mut self, sas_data: impl Into<String>) -> &mut Self {
         self.sas_data = sas_data.into();
         self
     }
 
     /// Sets the version string of the SAS® environment where the dataset was created.
     #[inline]
-    pub fn set_version(&mut self, version: impl Into<String>) -> &mut Self {
+    pub fn version(&mut self, version: impl Into<String>) -> &mut Self {
         self.version = version.into();
         self
     }
 
     /// Sets the operating system of the SAS® environment where the dataset was created.
     #[inline]
-    pub fn set_operating_system(&mut self, operating_system: impl Into<String>) -> &mut Self {
+    pub fn operating_system(&mut self, operating_system: impl Into<String>) -> &mut Self {
         self.operating_system = operating_system.into();
         self
     }
 
     /// Sets the creation date of the dataset.
     #[inline]
-    pub fn set_created(&mut self, created: SasDateTime) -> &mut Self {
+    pub fn created(&mut self, created: SasDateTime) -> &mut Self {
         self.created = created;
         self
     }
 
     /// Sets the last modified date of the dataset.
     #[inline]
-    pub fn set_modified(&mut self, modified: SasDateTime) -> &mut Self {
+    pub fn modified(&mut self, modified: SasDateTime) -> &mut Self {
         self.modified = modified;
         self
     }
 
     /// Sets the label of the dataset, which will be truncated to 40 bytes, at most.
     #[inline]
-    pub fn set_dataset_label(&mut self, dataset_label: impl Into<String>) -> &mut Self {
+    pub fn dataset_label(&mut self, dataset_label: impl Into<String>) -> &mut Self {
         self.dataset_label = dataset_label.into();
         self
     }
 
     /// Sets the type of the dataset. Often left blank.
     #[inline]
-    pub fn set_dataset_type(&mut self, dataset_type: impl Into<String>) -> &mut Self {
+    pub fn dataset_type(&mut self, dataset_type: impl Into<String>) -> &mut Self {
         self.dataset_type = dataset_type.into();
         self
     }
@@ -313,7 +314,7 @@ impl XportSchemaBuilder {
     /// Sets the number of records in the dataset. Use `None` to indicate the record count
     /// is unknown.
     #[inline]
-    pub fn set_record_count(&mut self, record_count: Option<u64>) -> &mut Self {
+    pub fn record_count(&mut self, record_count: Option<u64>) -> &mut Self {
         self.record_count = record_count;
         self
     }
@@ -349,10 +350,10 @@ impl XportSchemaBuilder {
                     )
                     .with_source(e)
                 })?;
-                builder.set_number(number);
+                builder.number(number);
             }
             let position = builder.position.unwrap_or(position_accumulator);
-            builder.set_position(position);
+            builder.position(position);
             builder.record_offset = position_accumulator;
             position_accumulator = position_accumulator
                 .checked_add(u32::from(builder.value_length))
@@ -464,19 +465,19 @@ mod chrono_tests {
             .checked_add_days(Days::new(1))
             .unwrap()
             .into();
-        let variable = XportVariable::builder().set_short_name("STUDYID").clone();
+        let variable = XportVariable::builder().short_name("STUDYID").clone();
         let schema = XportSchema::builder()
-            .set_xport_dataset_version(XportDatasetVersion::V9)
-            .set_format(XportSchema::DEFAULT_FORMAT)
-            .set_dataset_name("AE")
-            .set_sas_data(XportSchema::DEFAULT_SAS_DATA)
-            .set_version("1.0")
-            .set_operating_system("WinXP")
-            .set_created(created)
-            .set_modified(modified)
-            .set_dataset_label("Adverse Events")
-            .set_dataset_type("Data")
-            .set_record_count(Some(100))
+            .xport_dataset_version(XportDatasetVersion::V9)
+            .format(XportSchema::DEFAULT_FORMAT)
+            .dataset_name("AE")
+            .sas_data(XportSchema::DEFAULT_SAS_DATA)
+            .version("1.0")
+            .operating_system("WinXP")
+            .created(created)
+            .modified(modified)
+            .dataset_label("Adverse Events")
+            .dataset_type("Data")
+            .record_count(Some(100))
             .add_variable(variable)
             .try_build()
             .unwrap();
@@ -511,8 +512,8 @@ mod tests {
 
     fn build_variable(name: &str, value_length: u16) -> XportVariableBuilder {
         XportVariable::builder()
-            .set_short_name(name)
-            .set_value_length(value_length)
+            .short_name(name)
+            .value_length(value_length)
             .clone()
     }
 
@@ -631,7 +632,7 @@ mod tests {
     #[test]
     fn preserves_explicit_number() {
         let mut var_b = build_variable("B", 8);
-        var_b.set_number(99);
+        var_b.number(99);
         let schema = XportSchema::builder()
             .add_variable(build_variable("A", 8))
             .add_variable(var_b)
@@ -659,7 +660,7 @@ mod tests {
     #[test]
     fn preserves_explicit_position_without_shifting_accumulator() {
         let mut var_b = build_variable("B", 20);
-        var_b.set_position(100);
+        var_b.position(100);
         let schema = XportSchema::builder()
             .add_variable(build_variable("A", 8))
             .add_variable(var_b)
@@ -675,7 +676,7 @@ mod tests {
     #[test]
     fn cleared_number_gets_auto_computed() {
         let mut var = build_variable("A", 8);
-        var.set_number(50);
+        var.number(50);
         var.clear_number();
         let schema = XportSchema::builder()
             .add_variable(var)
@@ -687,7 +688,7 @@ mod tests {
     #[test]
     fn cleared_position_gets_auto_computed() {
         let mut var = build_variable("B", 8);
-        var.set_position(100);
+        var.position(100);
         var.clear_position();
         let schema = XportSchema::builder()
             .add_variable(build_variable("A", 4))
@@ -700,18 +701,18 @@ mod tests {
     fn build_numeric_variable(name: &str, value_length: u16) -> XportVariableBuilder {
         let mut builder = XportVariable::builder();
         builder
-            .set_short_name(name)
-            .set_value_type(SasVariableType::Numeric)
-            .set_value_length(value_length);
+            .short_name(name)
+            .value_type(SasVariableType::Numeric)
+            .value_length(value_length);
         builder
     }
 
     fn build_character_variable(name: &str, value_length: u16) -> XportVariableBuilder {
         let mut builder = XportVariable::builder();
         builder
-            .set_short_name(name)
-            .set_value_type(SasVariableType::Character)
-            .set_value_length(value_length);
+            .short_name(name)
+            .value_type(SasVariableType::Character)
+            .value_length(value_length);
         builder
     }
 
@@ -772,7 +773,7 @@ mod tests {
     #[test]
     fn v8_character_exceeding_v5_max_succeeds() {
         let result = XportSchema::builder()
-            .set_xport_dataset_version(XportDatasetVersion::V8)
+            .xport_dataset_version(XportDatasetVersion::V8)
             .add_variable(build_character_variable(
                 "A",
                 u16::from(XportVariable::MAX_V5_CHARACTER_LENGTH_IN_BYTES) + 1,
@@ -784,7 +785,7 @@ mod tests {
     #[test]
     fn v8_character_at_max_length_succeeds() {
         let result = XportSchema::builder()
-            .set_xport_dataset_version(XportDatasetVersion::V8)
+            .xport_dataset_version(XportDatasetVersion::V8)
             .add_variable(build_character_variable(
                 "A",
                 XportVariable::MAX_V8_CHARACTER_LENGTH_IN_BYTES,
@@ -796,7 +797,7 @@ mod tests {
     #[test]
     fn v8_character_exceeding_max_length_fails() {
         let result = XportSchema::builder()
-            .set_xport_dataset_version(XportDatasetVersion::V8)
+            .xport_dataset_version(XportDatasetVersion::V8)
             .add_variable(build_character_variable(
                 "A",
                 XportVariable::MAX_V8_CHARACTER_LENGTH_IN_BYTES + 1,
