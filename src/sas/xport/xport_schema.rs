@@ -185,6 +185,7 @@ pub struct XportSchemaBuilder {
 }
 
 impl Default for XportSchemaBuilder {
+    #[inline]
     fn default() -> Self {
         Self::new(SasDateTime::new())
     }
@@ -229,30 +230,35 @@ impl XportSchemaBuilder {
     }
 
     /// Sets the format, which is usually "SAS".
+    #[inline]
     pub fn set_format(&mut self, format: impl Into<String>) -> &mut Self {
         self.format = format.into();
         self
     }
 
     /// Sets the name of the dataset, which will be truncated to 8 bytes, at most.
+    #[inline]
     pub fn set_dataset_name(&mut self, dataset_name: impl Into<String>) -> &mut Self {
         self.dataset_name = dataset_name.into();
         self
     }
 
     /// Sets the SAS data value, which is usually "SASDATA".
+    #[inline]
     pub fn set_sas_data(&mut self, sas_data: impl Into<String>) -> &mut Self {
         self.sas_data = sas_data.into();
         self
     }
 
     /// Sets the version string of the SAS® environment where the dataset was created.
+    #[inline]
     pub fn set_version(&mut self, version: impl Into<String>) -> &mut Self {
         self.version = version.into();
         self
     }
 
     /// Sets the operating system of the SAS® environment where the dataset was created.
+    #[inline]
     pub fn set_operating_system(&mut self, operating_system: impl Into<String>) -> &mut Self {
         self.operating_system = operating_system.into();
         self
@@ -273,12 +279,14 @@ impl XportSchemaBuilder {
     }
 
     /// Sets the label of the dataset, which will be truncated to 40 bytes, at most.
+    #[inline]
     pub fn set_dataset_label(&mut self, dataset_label: impl Into<String>) -> &mut Self {
         self.dataset_label = dataset_label.into();
         self
     }
 
     /// Sets the type of the dataset. Often left blank.
+    #[inline]
     pub fn set_dataset_type(&mut self, dataset_type: impl Into<String>) -> &mut Self {
         self.dataset_type = dataset_type.into();
         self
@@ -293,6 +301,7 @@ impl XportSchemaBuilder {
     }
 
     /// Adds the variable builders to the schema.
+    #[inline]
     pub fn add_variables(
         &mut self,
         iterator: impl IntoIterator<Item = XportVariableBuilder>,

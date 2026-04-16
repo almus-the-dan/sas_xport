@@ -1,13 +1,11 @@
-use sas_xport::sas::xport::{AsyncXportReader, XportReaderOptions, XportValue};
+use sas_xport::sas::xport::{AsyncXportReader, XportValue};
 use tokio::fs::File as AsyncFile;
 
 async fn open_async(
     path: &str,
 ) -> sas_xport::sas::xport::AsyncXportDataset<tokio::io::BufReader<AsyncFile>> {
     let file = AsyncFile::open(path).await.unwrap();
-    let reader = AsyncXportReader::from_file(file, &XportReaderOptions::builder().build())
-        .await
-        .unwrap();
+    let reader = AsyncXportReader::from_file(file).await.unwrap();
     reader
         .next_dataset()
         .await
@@ -84,7 +82,7 @@ mod tests {
     #[tokio::test]
     async fn seek_record_multiple_datasets_can_seek_first_record() {
         let mut adsl = open_async("tests/resources/multi/multiple-datasets.xpt").await;
-        adsl.read_to_end().await.unwrap();
+        adsl.skip_to_end().await.unwrap();
 
         let mut adae = adsl.next_dataset().await.unwrap().unwrap();
         assert_eq!("ADAE", adae.schema().dataset_name());
@@ -135,8 +133,7 @@ mod tests {
 mod chrono_tests {
     use chrono::{Local, NaiveDate, TimeZone};
     use sas_xport::sas::xport::{
-        AsyncXportReader, XportFileVersion, XportMetadata, XportReaderOptions, XportSchema,
-        XportVariable,
+        AsyncXportReader, XportFileVersion, XportMetadata, XportSchema, XportVariable,
     };
     use sas_xport::sas::{SasDateTime, SasJustification, SasVariableType};
     use tokio::fs::File as AsyncFile;
@@ -179,9 +176,7 @@ mod chrono_tests {
     #[tokio::test]
     async fn read_metadata() {
         let file = AsyncFile::open("tests/resources/v5/ae.xpt").await.unwrap();
-        let reader = AsyncXportReader::from_file(file, &XportReaderOptions::builder().into())
-            .await
-            .unwrap();
+        let reader = AsyncXportReader::from_file(file).await.unwrap();
         let metadata = reader.metadata();
         assert_eq!(XportFileVersion::V5, metadata.file_version());
         assert_eq!(XportMetadata::DEFAULT_SYMBOL1, metadata.symbol1());
@@ -201,9 +196,7 @@ mod chrono_tests {
     #[tokio::test]
     async fn read_dataset_v5() {
         let file = AsyncFile::open("tests/resources/v5/ae.xpt").await.unwrap();
-        let reader = AsyncXportReader::from_file(file, &XportReaderOptions::builder().into())
-            .await
-            .unwrap();
+        let reader = AsyncXportReader::from_file(file).await.unwrap();
         let dataset = reader.next_dataset().await.unwrap().unwrap();
         let schema = dataset.schema();
 
@@ -252,9 +245,7 @@ mod chrono_tests {
         let file = AsyncFile::open("tests/resources/v9/adsl.xpt")
             .await
             .unwrap();
-        let reader = AsyncXportReader::from_file(file, &XportReaderOptions::builder().into())
-            .await
-            .unwrap();
+        let reader = AsyncXportReader::from_file(file).await.unwrap();
         let dataset = reader.next_dataset().await.unwrap().unwrap();
         let schema = dataset.schema();
 

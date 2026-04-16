@@ -5,8 +5,7 @@ mod tests {
     use sas_xport::sas::SasVariableType;
     use sas_xport::sas::xport::{
         AsyncXportWriter, TruncationPolicy, XportDatasetVersion, XportFileVersion, XportMetadata,
-        XportReader, XportReaderOptions, XportSchema, XportValue, XportVariable,
-        XportWriterOptions,
+        XportReader, XportSchema, XportValue, XportVariable,
     };
     use std::io::{BufReader, Cursor as StdCursor};
 
@@ -57,20 +56,13 @@ mod tests {
             .build();
 
         let mut buffer = std::io::Cursor::new(Vec::new());
-        let writer = AsyncXportWriter::from_writer(
-            &mut buffer,
-            metadata.clone(),
-            XportWriterOptions::default(),
-        )
-        .await
-        .unwrap();
+        let writer = AsyncXportWriter::from_writer(&mut buffer, metadata.clone())
+            .await
+            .unwrap();
         writer.finish().await.unwrap();
         let bytes = buffer.into_inner();
 
-        let reader_options = XportReaderOptions::builder().build();
-        let reader =
-            XportReader::from_reader(BufReader::new(StdCursor::new(bytes)), &reader_options)
-                .unwrap();
+        let reader = XportReader::from_reader(BufReader::new(StdCursor::new(bytes))).unwrap();
         let read_metadata = reader.metadata();
 
         assert_eq!(XportFileVersion::V5, read_metadata.file_version());
@@ -95,20 +87,13 @@ mod tests {
             .build();
 
         let mut buffer = std::io::Cursor::new(Vec::new());
-        let writer = AsyncXportWriter::from_writer(
-            &mut buffer,
-            metadata.clone(),
-            XportWriterOptions::default(),
-        )
-        .await
-        .unwrap();
+        let writer = AsyncXportWriter::from_writer(&mut buffer, metadata.clone())
+            .await
+            .unwrap();
         writer.finish().await.unwrap();
         let bytes = buffer.into_inner();
 
-        let reader_options = XportReaderOptions::builder().build();
-        let reader =
-            XportReader::from_reader(BufReader::new(StdCursor::new(bytes)), &reader_options)
-                .unwrap();
+        let reader = XportReader::from_reader(BufReader::new(StdCursor::new(bytes))).unwrap();
         let read_metadata = reader.metadata();
 
         assert_eq!(XportFileVersion::V8, read_metadata.file_version());
@@ -142,10 +127,9 @@ mod tests {
 
         let metadata = XportMetadata::builder().build();
         let mut buffer = std::io::Cursor::new(Vec::new());
-        let writer =
-            AsyncXportWriter::from_writer(&mut buffer, metadata, XportWriterOptions::default())
-                .await
-                .unwrap();
+        let writer = AsyncXportWriter::from_writer(&mut buffer, metadata)
+            .await
+            .unwrap();
         let mut writer = writer.write_schema(schema).await.unwrap();
         writer
             .write_record(&[XportValue::from("ABC-001"), XportValue::from(35.0)])
@@ -157,12 +141,8 @@ mod tests {
             .unwrap();
         writer.set_count_and_finish().await.unwrap();
 
-        let reader_options = XportReaderOptions::builder().build();
-        let reader = XportReader::from_reader(
-            BufReader::new(StdCursor::new(buffer.into_inner())),
-            &reader_options,
-        )
-        .unwrap();
+        let reader =
+            XportReader::from_reader(BufReader::new(StdCursor::new(buffer.into_inner()))).unwrap();
         let mut dataset = reader.next_dataset().unwrap().expect("expected a dataset");
         assert_eq!("DM", dataset.schema().dataset_name());
         assert_eq!(None, dataset.schema().record_count());
@@ -209,10 +189,9 @@ mod tests {
 
         let metadata = XportMetadata::builder().build();
         let mut buffer = std::io::Cursor::new(Vec::new());
-        let writer =
-            AsyncXportWriter::from_writer(&mut buffer, metadata, XportWriterOptions::default())
-                .await
-                .unwrap();
+        let writer = AsyncXportWriter::from_writer(&mut buffer, metadata)
+            .await
+            .unwrap();
         let mut writer = writer.write_schema(schema).await.unwrap();
         writer
             .write_record(&[
@@ -232,12 +211,8 @@ mod tests {
             .unwrap();
         writer.set_count_and_finish().await.unwrap();
 
-        let reader_options = XportReaderOptions::builder().build();
-        let reader = XportReader::from_reader(
-            BufReader::new(StdCursor::new(buffer.into_inner())),
-            &reader_options,
-        )
-        .unwrap();
+        let reader =
+            XportReader::from_reader(BufReader::new(StdCursor::new(buffer.into_inner()))).unwrap();
         let mut dataset = reader.next_dataset().unwrap().expect("expected a dataset");
         assert_eq!("DM", dataset.schema().dataset_name());
 
@@ -273,10 +248,9 @@ mod tests {
             .set_xport_file_version(XportFileVersion::V8)
             .build();
         let mut buffer = std::io::Cursor::new(Vec::new());
-        let writer =
-            AsyncXportWriter::from_writer(&mut buffer, metadata, XportWriterOptions::default())
-                .await
-                .unwrap();
+        let writer = AsyncXportWriter::from_writer(&mut buffer, metadata)
+            .await
+            .unwrap();
         let mut writer = writer.write_schema(schema).await.unwrap();
         writer
             .write_record(&[XportValue::from("Headache")])
@@ -292,12 +266,8 @@ mod tests {
             .unwrap();
         writer.set_count_and_finish().await.unwrap();
 
-        let reader_options = XportReaderOptions::builder().build();
-        let reader = XportReader::from_reader(
-            BufReader::new(StdCursor::new(buffer.into_inner())),
-            &reader_options,
-        )
-        .unwrap();
+        let reader =
+            XportReader::from_reader(BufReader::new(StdCursor::new(buffer.into_inner()))).unwrap();
         let mut dataset = reader.next_dataset().unwrap().expect("expected a dataset");
         assert_eq!(Some(3), dataset.schema().record_count());
         assert_eq!(
@@ -337,10 +307,9 @@ mod tests {
             .set_xport_file_version(XportFileVersion::V8)
             .build();
         let mut buffer = std::io::Cursor::new(Vec::new());
-        let writer =
-            AsyncXportWriter::from_writer(&mut buffer, metadata, XportWriterOptions::default())
-                .await
-                .unwrap();
+        let writer = AsyncXportWriter::from_writer(&mut buffer, metadata)
+            .await
+            .unwrap();
         let mut writer = writer.write_schema(schema).await.unwrap();
         writer
             .write_record(&[XportValue::from("Headache")])
@@ -356,12 +325,8 @@ mod tests {
             .unwrap();
         writer.set_count_and_finish().await.unwrap();
 
-        let reader_options = XportReaderOptions::builder().build();
-        let reader = XportReader::from_reader(
-            BufReader::new(StdCursor::new(buffer.into_inner())),
-            &reader_options,
-        )
-        .unwrap();
+        let reader =
+            XportReader::from_reader(BufReader::new(StdCursor::new(buffer.into_inner()))).unwrap();
         let mut dataset = reader.next_dataset().unwrap().expect("expected a dataset");
         assert_eq!(Some(3), dataset.schema().record_count());
 
@@ -412,10 +377,9 @@ mod tests {
 
         let metadata = XportMetadata::builder().build();
         let mut buffer = std::io::Cursor::new(Vec::new());
-        let writer =
-            AsyncXportWriter::from_writer(&mut buffer, metadata, XportWriterOptions::default())
-                .await
-                .unwrap();
+        let writer = AsyncXportWriter::from_writer(&mut buffer, metadata)
+            .await
+            .unwrap();
 
         // First dataset
         let mut writer = writer.write_schema(schema1).await.unwrap();
@@ -438,12 +402,8 @@ mod tests {
         writer.finish().await.unwrap();
 
         // Read back
-        let reader_options = XportReaderOptions::builder().build();
-        let reader = XportReader::from_reader(
-            BufReader::new(StdCursor::new(buffer.into_inner())),
-            &reader_options,
-        )
-        .unwrap();
+        let reader =
+            XportReader::from_reader(BufReader::new(StdCursor::new(buffer.into_inner()))).unwrap();
 
         let mut dataset1 = reader.next_dataset().unwrap().expect("expected dataset 1");
         assert_eq!("DM", dataset1.schema().dataset_name());
@@ -500,10 +460,9 @@ mod tests {
             .set_xport_file_version(XportFileVersion::V8)
             .build();
         let mut buffer = std::io::Cursor::new(Vec::new());
-        let writer =
-            AsyncXportWriter::from_writer(&mut buffer, metadata, XportWriterOptions::default())
-                .await
-                .unwrap();
+        let writer = AsyncXportWriter::from_writer(&mut buffer, metadata)
+            .await
+            .unwrap();
 
         let mut writer = writer.write_schema(schema1).await.unwrap();
         writer
@@ -523,12 +482,8 @@ mod tests {
             .unwrap();
         writer.set_count_and_finish().await.unwrap();
 
-        let reader_options = XportReaderOptions::builder().build();
-        let reader = XportReader::from_reader(
-            BufReader::new(StdCursor::new(buffer.into_inner())),
-            &reader_options,
-        )
-        .unwrap();
+        let reader =
+            XportReader::from_reader(BufReader::new(StdCursor::new(buffer.into_inner()))).unwrap();
 
         let mut dataset1 = reader.next_dataset().unwrap().expect("expected dataset 1");
         assert_eq!("DM", dataset1.schema().dataset_name());
@@ -584,10 +539,9 @@ mod tests {
             .set_xport_file_version(XportFileVersion::V8)
             .build();
         let mut buffer = std::io::Cursor::new(Vec::new());
-        let writer =
-            AsyncXportWriter::from_writer(&mut buffer, metadata, XportWriterOptions::default())
-                .await
-                .unwrap();
+        let writer = AsyncXportWriter::from_writer(&mut buffer, metadata)
+            .await
+            .unwrap();
 
         let mut writer = writer.write_schema(schema1).await.unwrap();
         writer
@@ -607,12 +561,8 @@ mod tests {
             .unwrap();
         writer.set_count_and_finish().await.unwrap();
 
-        let reader_options = XportReaderOptions::builder().build();
-        let reader = XportReader::from_reader(
-            BufReader::new(StdCursor::new(buffer.into_inner())),
-            &reader_options,
-        )
-        .unwrap();
+        let reader =
+            XportReader::from_reader(BufReader::new(StdCursor::new(buffer.into_inner()))).unwrap();
 
         let mut dataset1 = reader.next_dataset().unwrap().expect("expected dataset 1");
         assert_eq!("DM", dataset1.schema().dataset_name());
@@ -648,14 +598,12 @@ mod tests {
             .try_build()
             .unwrap();
 
-        let options = XportWriterOptions::builder()
-            .set_truncation_policy(SasVariableType::Character, TruncationPolicy::Report)
-            .build();
         let mut buffer = std::io::Cursor::new(Vec::new());
-        let writer =
-            AsyncXportWriter::from_writer(&mut buffer, XportMetadata::builder().build(), options)
-                .await
-                .unwrap();
+        let writer = AsyncXportWriter::options()
+            .set_truncation_policy(SasVariableType::Character, TruncationPolicy::Report)
+            .from_tokio_writer(&mut buffer, XportMetadata::builder().build())
+            .await
+            .unwrap();
         let mut writer = writer.write_schema(schema).await.unwrap();
 
         // "日本語テスト" is 18 bytes in UTF-8, won't fit in 8 bytes.
@@ -685,13 +633,9 @@ mod tests {
             .unwrap();
 
         let mut buffer = std::io::Cursor::new(Vec::new());
-        let writer = AsyncXportWriter::from_writer(
-            &mut buffer,
-            XportMetadata::builder().build(),
-            XportWriterOptions::default(),
-        )
-        .await
-        .unwrap();
+        let writer = AsyncXportWriter::from_writer(&mut buffer, XportMetadata::builder().build())
+            .await
+            .unwrap();
         let mut writer = writer.write_schema(schema).await.unwrap();
 
         // Same value, but Silent policy (the default) — no error.
@@ -715,14 +659,12 @@ mod tests {
             .try_build()
             .unwrap();
 
-        let options = XportWriterOptions::builder()
-            .set_truncation_policy(SasVariableType::Numeric, TruncationPolicy::Report)
-            .build();
         let mut buffer = std::io::Cursor::new(Vec::new());
-        let writer =
-            AsyncXportWriter::from_writer(&mut buffer, XportMetadata::builder().build(), options)
-                .await
-                .unwrap();
+        let writer = AsyncXportWriter::options()
+            .set_truncation_policy(SasVariableType::Numeric, TruncationPolicy::Report)
+            .from_tokio_writer(&mut buffer, XportMetadata::builder().build())
+            .await
+            .unwrap();
         let mut writer = writer.write_schema(schema).await.unwrap();
 
         // 75.3 needs precision beyond 3 bytes.
@@ -750,13 +692,9 @@ mod tests {
             .unwrap();
 
         let mut buffer = std::io::Cursor::new(Vec::new());
-        let writer = AsyncXportWriter::from_writer(
-            &mut buffer,
-            XportMetadata::builder().build(),
-            XportWriterOptions::default(),
-        )
-        .await
-        .unwrap();
+        let writer = AsyncXportWriter::from_writer(&mut buffer, XportMetadata::builder().build())
+            .await
+            .unwrap();
         let mut writer = writer.write_schema(schema).await.unwrap();
 
         // Same value, but Silent policy (the default) — no error.

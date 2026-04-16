@@ -13,6 +13,7 @@ pub enum SasJustification {
 
 impl SasJustification {
     /// Returns the variable justification encoded as a 16-bit unsigned integer.
+    #[inline]
     #[must_use]
     pub fn code(&self) -> u16 {
         *self as u16

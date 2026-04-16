@@ -146,6 +146,8 @@ impl<R: BufRead> XportDataset<R> {
     /// mutably; drop it before calling [`Self::next_dataset`].
     ///
     /// For zero-copy access, use [`Self::next_record`] directly instead.
+    #[inline]
+    #[must_use]
     pub fn records(&mut self) -> XportRecordIterator<'_, R> {
         XportRecordIterator::new(self)
     }
@@ -179,7 +181,7 @@ impl<R: BufRead> XportDataset<R> {
     ///
     /// # Errors
     /// Will return `Err` if an I/O error occurs while advancing to the end of the dataset.
-    pub fn read_to_end(&mut self) -> Result<()> {
+    pub fn skip_to_end(&mut self) -> Result<()> {
         while !self.state.complete() {
             let outcome = (self.advance_fn)(self)?;
             if matches!(outcome, FindRecordOutcome::Record) {
@@ -193,7 +195,7 @@ impl<R: BufRead> XportDataset<R> {
 
     /// Reads the next dataset. It is an error if there are unread records in the current dataset.
     /// Ensure every record in the current dataset is read by either calling `next_record` until
-    /// `Ok(None)` is returned or by calling `read_to_end`.
+    /// `Ok(None)` is returned or by calling `skip_to_end`.
     ///
     /// # Errors
     /// Return an `Err` if:

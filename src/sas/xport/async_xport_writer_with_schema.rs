@@ -3,8 +3,8 @@ use super::{Result, XportError, XportMetadata, XportSchema, XportValue};
 use crate::sas::xport::async_xport_writer_state::AsyncXportWriterState;
 use crate::sas::xport::async_xport_writer_with_metadata::AsyncXportWriterWithMetadata;
 use crate::sas::xport::converter::{numeric_encoded_length, validate_values};
+use crate::sas::xport::truncation_policy::TruncationPolicy;
 use crate::sas::xport::xport_error::{TruncatedVariable, XportErrorKind, XportSection};
-use crate::sas::xport::xport_writer_options::TruncationPolicy;
 use crate::sas::{SasFloat64, SasVariableType};
 use tokio::io::{AsyncSeek, AsyncWrite};
 

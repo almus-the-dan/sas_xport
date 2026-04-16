@@ -284,6 +284,7 @@ pub struct XportVariableBuilder {
 }
 
 impl Default for XportVariableBuilder {
+    #[inline]
     fn default() -> Self {
         Self::new()
     }
@@ -354,12 +355,14 @@ impl XportVariableBuilder {
     }
 
     /// Sets the name of the variable, which will be truncated to 8 bytes.
+    #[inline]
     pub fn set_short_name(&mut self, short_name: impl Into<String>) -> &mut Self {
         self.short_name = short_name.into();
         self
     }
 
     /// Sets the label of the variable, which will be truncated to 40 bytes.
+    #[inline]
     pub fn set_short_label(&mut self, short_label: impl Into<String>) -> &mut Self {
         self.short_label = short_label.into();
         self
@@ -367,6 +370,7 @@ impl XportVariableBuilder {
 
     /// Sets the format of the variable, which will be truncated to 8 bytes. The format
     /// should not include a leading '.'.
+    #[inline]
     pub fn set_short_format(&mut self, short_format: impl Into<String>) -> &mut Self {
         self.short_format = short_format.into();
         self
@@ -397,6 +401,7 @@ impl XportVariableBuilder {
     }
 
     /// Sets the input format.
+    #[inline]
     pub fn set_short_input_format(&mut self, short_input_format: impl Into<String>) -> &mut Self {
         self.short_input_format = short_input_format.into();
         self
@@ -434,30 +439,35 @@ impl XportVariableBuilder {
     }
 
     /// Sets the name, which will be truncated to 32 bytes.
+    #[inline]
     pub fn set_medium_name(&mut self, medium_name: impl Into<String>) -> &mut Self {
         self.medium_name = medium_name.into();
         self
     }
 
     /// Sets the full name of the variable.
+    #[inline]
     pub fn set_long_name(&mut self, long_name: impl Into<String>) -> &mut Self {
         self.long_name = long_name.into();
         self
     }
 
     /// Sets the full label of the variable.
+    #[inline]
     pub fn set_long_label(&mut self, long_label: impl Into<String>) -> &mut Self {
         self.long_label = long_label.into();
         self
     }
 
     /// Sets the full format of the variable.
+    #[inline]
     pub fn set_long_format(&mut self, long_format: impl Into<String>) -> &mut Self {
         self.long_format = long_format.into();
         self
     }
 
     /// Sets the full input format of the variable.
+    #[inline]
     pub fn set_long_input_format(&mut self, long_input_format: impl Into<String>) -> &mut Self {
         self.long_input_format = long_input_format.into();
         self
@@ -466,6 +476,7 @@ impl XportVariableBuilder {
     /// Sets the short, medium, and long name from a single value. The long name is
     /// stored as-is, while the medium and short names are truncated to 32 and 8 bytes
     /// respectively.
+    #[inline]
     pub fn set_full_name(&mut self, name: impl Into<String>) -> &mut Self {
         let name = name.into();
         let short_name = truncate(
@@ -490,6 +501,7 @@ impl XportVariableBuilder {
     }
 
     /// Builds a variable from the current configuration, consuming the builder.
+    #[inline]
     #[must_use]
     pub fn build_into(self) -> XportVariable {
         XportVariable {

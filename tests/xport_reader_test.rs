@@ -1,11 +1,10 @@
-use sas_xport::sas::xport::{XportDataset, XportReader, XportReaderOptions, XportValue};
+use sas_xport::sas::xport::{XportDataset, XportReader, XportValue};
 use std::fs::File;
 use std::io::BufReader;
 
 fn open_sync(path: &str) -> XportDataset<BufReader<File>> {
     let file = File::open(path).unwrap();
-    let options = XportReaderOptions::builder().build();
-    let reader = XportReader::from_file(file, &options).unwrap();
+    let reader = XportReader::from_file(file).unwrap();
     reader
         .next_dataset()
         .unwrap()
@@ -151,7 +150,7 @@ mod tests {
     #[test]
     fn seek_record_multiple_datasets_can_seek_first_record() {
         let mut adsl = open_sync("tests/resources/multi/multiple-datasets.xpt");
-        adsl.read_to_end().unwrap();
+        adsl.skip_to_end().unwrap();
 
         let mut adae = adsl.next_dataset().unwrap().unwrap();
         assert_eq!("ADAE", adae.schema().dataset_name());
@@ -359,7 +358,7 @@ mod chrono_tests {
 
 #[cfg(test)]
 mod non_seeking_tests {
-    use sas_xport::sas::xport::{XportReader, XportReaderOptions, XportValue};
+    use sas_xport::sas::xport::{XportReader, XportValue};
     use std::fs::File;
     use std::io::{BufRead, BufReader, Read};
 
@@ -386,8 +385,7 @@ mod non_seeking_tests {
     fn read_single_dataset_without_seek() {
         let file = File::open("tests/resources/v5/ae.xpt").unwrap();
         let reader = ReadOnly(BufReader::new(file));
-        let options = XportReaderOptions::builder().build();
-        let xport = XportReader::from_reader(reader, &options).unwrap();
+        let xport = XportReader::from_reader(reader).unwrap();
         let mut dataset = xport.next_dataset().unwrap().unwrap();
         let variable_count = dataset.schema().variables().len();
 
@@ -403,8 +401,7 @@ mod non_seeking_tests {
     fn read_multiple_datasets_without_seek() {
         let file = File::open("tests/resources/multi/multiple-datasets.xpt").unwrap();
         let reader = ReadOnly(BufReader::new(file));
-        let options = XportReaderOptions::builder().build();
-        let xport = XportReader::from_reader(reader, &options).unwrap();
+        let xport = XportReader::from_reader(reader).unwrap();
 
         let mut dataset = xport.next_dataset().unwrap().unwrap();
         assert_eq!("ADSL", dataset.schema().dataset_name());
@@ -437,8 +434,7 @@ mod non_seeking_tests {
     fn read_narrow_records_without_seek() {
         let file = File::open("tests/resources/narrow/relrec.xpt").unwrap();
         let reader = ReadOnly(BufReader::new(file));
-        let options = XportReaderOptions::builder().build();
-        let xport = XportReader::from_reader(reader, &options).unwrap();
+        let xport = XportReader::from_reader(reader).unwrap();
         let mut dataset = xport.next_dataset().unwrap().unwrap();
 
         let mut record_count = 0;
@@ -462,8 +458,7 @@ mod non_seeking_tests {
     fn iterator_works_without_seek() {
         let file = File::open("tests/resources/v5/ae.xpt").unwrap();
         let reader = ReadOnly(BufReader::new(file));
-        let options = XportReaderOptions::builder().build();
-        let xport = XportReader::from_reader(reader, &options).unwrap();
+        let xport = XportReader::from_reader(reader).unwrap();
         let mut dataset = xport.next_dataset().unwrap().unwrap();
 
         let mut count = 0;
@@ -478,8 +473,7 @@ mod non_seeking_tests {
     fn read_v9_dataset_without_seek() {
         let file = File::open("tests/resources/v9/adsl.xpt").unwrap();
         let reader = ReadOnly(BufReader::new(file));
-        let options = XportReaderOptions::builder().build();
-        let xport = XportReader::from_reader(reader, &options).unwrap();
+        let xport = XportReader::from_reader(reader).unwrap();
         let mut dataset = xport.next_dataset().unwrap().unwrap();
 
         let mut record_count = 0;

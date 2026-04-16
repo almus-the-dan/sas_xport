@@ -20,11 +20,10 @@ A Rust library for reading and writing SAS® Transport (XPORT) files, supporting
 
 ```rust
 use std::fs::File;
-use sas_xport::sas::xport::{XportReader, XportReaderOptions, Result};
+use sas_xport::sas::xport::{XportReader, Result};
 
 pub fn read_xport_file(file: File) -> Result<()> {
-    let options = XportReaderOptions::builder().build();
-    let reader = XportReader::from_file(file, &options)?;
+    let reader = XportReader::from_file(file)?;
     let metadata = reader.metadata().clone();
     let Some(mut dataset) = reader.next_dataset()? else {
         println!("File contains no datasets");
@@ -52,11 +51,10 @@ pub fn read_xport_file(file: File) -> Result<()> {
 
 ```rust
 use std::fs::File;
-use sas_xport::sas::xport::{XportReader, XportReaderOptions, Result};
+use sas_xport::sas::xport::{XportReader, Result};
 
 pub fn read_xport_file(file: File) -> Result<()> {
-    let options = XportReaderOptions::builder().build();
-    let reader = XportReader::from_file(file, &options)?;
+    let reader = XportReader::from_file(file)?;
     let Some(mut dataset) = reader.next_dataset()? else {
         println!("File contains no datasets");
         return Ok(());
@@ -82,11 +80,10 @@ pub fn read_xport_file(file: File) -> Result<()> {
 
 ```rust
 use std::fs::File;
-use sas_xport::sas::xport::{XportReader, XportReaderOptions, Result};
+use sas_xport::sas::xport::{XportReader, Result};
 
 pub fn read_xport_file(file: File) -> Result<()> {
-    let options = XportReaderOptions::builder().build();
-    let reader = XportReader::from_file(file, &options)?;
+    let reader = XportReader::from_file(file)?;
     let Some(mut dataset) = reader.next_dataset()? else {
         println!("File contains no datasets");
         return Ok(());
@@ -119,7 +116,6 @@ use std::fs::File;
 use sas_xport::sas::SasVariableType;
 use sas_xport::sas::xport::{
     Result, XportMetadata, XportSchema, XportValue, XportVariable, XportWriter,
-    XportWriterOptions,
 };
 
 pub fn write_xport_file(file: File) -> Result<()> {
@@ -142,7 +138,7 @@ pub fn write_xport_file(file: File) -> Result<()> {
         .add_variable(age)
         .try_build()?;
 
-    let writer = XportWriter::from_file(file, metadata, XportWriterOptions::default())?;
+    let writer = XportWriter::from_file(file, metadata)?;
     let mut writer = writer.write_schema(schema)?;
     writer.write_record(&[XportValue::from("STUDY-001"), XportValue::from(35.0)])?;
     writer.write_record(&[XportValue::from("STUDY-001"), XportValue::from(42.5)])?;
@@ -156,7 +152,7 @@ Both optional features are disabled by default. Enable them in your `Cargo.toml`
 
 ```toml
 [dependencies]
-sas_xport = { version = "0.1", features = ["tokio", "chrono"] }
+sas_xport = { version = "0.2", features = ["tokio", "chrono"] }
 ```
 
 ### `tokio` — Async I/O
@@ -169,11 +165,10 @@ Enables async reader and writer types built on [Tokio](https://tokio.rs/):
 
 ```rust
 use tokio::fs::File;
-use sas_xport::sas::xport::{AsyncXportReader, XportReaderOptions, Result};
+use sas_xport::sas::xport::{AsyncXportReader, Result};
 
 async fn read_async(file: File) -> Result<()> {
-    let options = XportReaderOptions::builder().build();
-    let reader = AsyncXportReader::from_file(file, &options).await?;
+    let reader = AsyncXportReader::from_file(file).await?;
     let Some(mut dataset) = reader.next_dataset().await? else {
         return Ok(());
     };

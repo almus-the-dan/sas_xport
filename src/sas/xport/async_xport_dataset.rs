@@ -60,7 +60,7 @@ impl<R: AsyncBufRead + Unpin> AsyncXportDataset<R> {
     /// * An I/O error occurs while trying to read the file
     /// * An encoding error occurs preventing a string from being read
     pub async fn next_record(&mut self) -> Result<Option<XportRecord<'_>>> {
-        // When attempting to read the next record, there are a several things we might encounter:
+        // When attempting to read the next record, there are several things we might encounter:
         // 1) An actual record.
         // 2) Zero or more blanks (ASCII spaces) followed by:
         //    a) EOF
@@ -75,13 +75,13 @@ impl<R: AsyncBufRead + Unpin> AsyncXportDataset<R> {
         // we back up the file pointer and return None.
         //
         // If the size of the record is greater than or equal than a header size (80 chars), we see if
-        // the remaining characters in the current 80 char block are all blanks. If we see all blanks and
+        // the remaining characters in the current 80-char block are all blanks. If we see all blanks, and
         // we're at the EOF, we return None. If we see the start of the next schema header, we might need
         // to grab some extra data to see if the full schema header. If it's not, then we will potentially
         // need to back up the file pointer.
         //
         // NOTE: Backing up the file pointer is more expensive in the async path than the sync path.
-        // Tokio's BufReader always discards its internal buffer on seek, so every backtrack requires
+        // Tokio's BufReader always discards its internal buffer on seek, so every backtracking requires
         // re-reading from the underlying I/O source. The sync BufReader can seek within its buffer.
         if self.state.complete() {
             return Ok(None);
@@ -163,12 +163,12 @@ impl<R: AsyncBufRead + Unpin> AsyncXportDataset<R> {
     }
 
     /// Consumes the rest of the current dataset without parsing any
-    /// of the records, making it more efficient when skipping to the end of the dataset
-    /// and none of the records are needed.
+    /// of the records, making it more efficient when skipping to the end of the dataset,
+    /// and no records are needed.
     ///
     /// # Errors
     /// Will return `Err` if an I/O error occurs while advancing to the end of the dataset.
-    pub async fn read_to_end(&mut self) -> Result<()> {
+    pub async fn skip_to_end(&mut self) -> Result<()> {
         while !self.state.complete() {
             let outcome = self.find_record().await?;
             if matches!(outcome, FindRecordOutcome::Record) {
@@ -182,7 +182,7 @@ impl<R: AsyncBufRead + Unpin> AsyncXportDataset<R> {
 
     /// Reads the next dataset. It is an error if there are unread records in the current dataset.
     /// Ensure every record in the current dataset is read by either calling `next_record` until
-    /// `Ok(None)` is returned or by calling `read_to_end`.
+    /// `Ok(None)` is returned or by calling `skip_to_end`.
     ///
     /// # Errors
     /// Return an `Err` if:

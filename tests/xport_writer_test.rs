@@ -1,7 +1,7 @@
 use float_cmp::assert_approx_eq;
 use sas_xport::sas::xport::{
     TruncationPolicy, XportDatasetVersion, XportFileVersion, XportMetadata, XportReader,
-    XportReaderOptions, XportSchema, XportValue, XportVariable, XportWriter, XportWriterOptions,
+    XportSchema, XportValue, XportVariable, XportWriter,
 };
 use sas_xport::sas::{SasDateTime, SasJustification, SasMonth, SasVariableType};
 use std::io::{BufReader, Cursor};
@@ -39,15 +39,11 @@ mod tests {
             .build();
 
         let mut buf = Cursor::new(Vec::new());
-        let writer =
-            XportWriter::from_writer(&mut buf, metadata.clone(), XportWriterOptions::default())
-                .unwrap();
+        let writer = XportWriter::from_writer(&mut buf, metadata.clone()).unwrap();
         drop(writer);
         let bytes = buf.into_inner();
 
-        let reader_options = XportReaderOptions::builder().build();
-        let reader =
-            XportReader::from_reader(BufReader::new(Cursor::new(bytes)), &reader_options).unwrap();
+        let reader = XportReader::from_reader(BufReader::new(Cursor::new(bytes))).unwrap();
         let read_metadata = reader.metadata();
 
         assert_eq!(XportFileVersion::V5, read_metadata.file_version());
@@ -72,15 +68,11 @@ mod tests {
             .build();
 
         let mut buf = Cursor::new(Vec::new());
-        let writer =
-            XportWriter::from_writer(&mut buf, metadata.clone(), XportWriterOptions::default())
-                .unwrap();
+        let writer = XportWriter::from_writer(&mut buf, metadata.clone()).unwrap();
         drop(writer);
         let bytes = buf.into_inner();
 
-        let reader_options = XportReaderOptions::builder().build();
-        let reader =
-            XportReader::from_reader(BufReader::new(Cursor::new(bytes)), &reader_options).unwrap();
+        let reader = XportReader::from_reader(BufReader::new(Cursor::new(bytes))).unwrap();
         let read_metadata = reader.metadata();
 
         assert_eq!(XportFileVersion::V8, read_metadata.file_version());
@@ -96,15 +88,11 @@ mod tests {
         let metadata = XportMetadata::builder().build();
 
         let mut buf = Cursor::new(Vec::new());
-        let writer =
-            XportWriter::from_writer(&mut buf, metadata.clone(), XportWriterOptions::default())
-                .unwrap();
+        let writer = XportWriter::from_writer(&mut buf, metadata.clone()).unwrap();
         drop(writer);
         let bytes = buf.into_inner();
 
-        let reader_options = XportReaderOptions::builder().build();
-        let reader =
-            XportReader::from_reader(BufReader::new(Cursor::new(bytes)), &reader_options).unwrap();
+        let reader = XportReader::from_reader(BufReader::new(Cursor::new(bytes))).unwrap();
         let read_metadata = reader.metadata();
 
         assert_eq!(XportFileVersion::V5, read_metadata.file_version());
@@ -121,8 +109,7 @@ mod tests {
     fn writes_exactly_240_bytes() {
         let metadata = XportMetadata::builder().build();
         let mut buf = Cursor::new(Vec::new());
-        let writer =
-            XportWriter::from_writer(&mut buf, metadata, XportWriterOptions::default()).unwrap();
+        let writer = XportWriter::from_writer(&mut buf, metadata).unwrap();
         drop(writer);
         assert_eq!(240, buf.into_inner().len());
     }
@@ -138,17 +125,12 @@ mod tests {
             .set_xport_file_version(file_version)
             .build();
         let mut buffer = Cursor::new(Vec::new());
-        let writer =
-            XportWriter::from_writer(&mut buffer, metadata, XportWriterOptions::default()).unwrap();
+        let writer = XportWriter::from_writer(&mut buffer, metadata).unwrap();
         let writer = writer.write_schema(schema).unwrap();
         writer.set_count_and_finish().unwrap();
 
-        let reader_options = XportReaderOptions::builder().build();
-        let reader = XportReader::from_reader(
-            BufReader::new(Cursor::new(buffer.into_inner())),
-            &reader_options,
-        )
-        .unwrap();
+        let reader =
+            XportReader::from_reader(BufReader::new(Cursor::new(buffer.into_inner()))).unwrap();
         let dataset = reader.next_dataset().unwrap().expect("expected a dataset");
         dataset.schema().clone()
     }
@@ -378,8 +360,7 @@ mod tests {
 
         let metadata = XportMetadata::builder().build();
         let mut buffer = Cursor::new(Vec::new());
-        let writer =
-            XportWriter::from_writer(&mut buffer, metadata, XportWriterOptions::default()).unwrap();
+        let writer = XportWriter::from_writer(&mut buffer, metadata).unwrap();
         let writer = writer.write_schema(schema).unwrap();
         writer.set_count_and_finish().unwrap();
         let len = buffer.into_inner().len();
@@ -438,8 +419,7 @@ mod tests {
 
         let metadata = XportMetadata::builder().build();
         let mut buffer = Cursor::new(Vec::new());
-        let writer =
-            XportWriter::from_writer(&mut buffer, metadata, XportWriterOptions::default()).unwrap();
+        let writer = XportWriter::from_writer(&mut buffer, metadata).unwrap();
         let mut writer = writer.write_schema(schema).unwrap();
         writer
             .write_record(&[XportValue::from("ABC-001"), XportValue::from(35.0)])
@@ -449,12 +429,8 @@ mod tests {
             .unwrap();
         writer.set_count_and_finish().unwrap();
 
-        let reader_options = XportReaderOptions::builder().build();
-        let reader = XportReader::from_reader(
-            BufReader::new(Cursor::new(buffer.into_inner())),
-            &reader_options,
-        )
-        .unwrap();
+        let reader =
+            XportReader::from_reader(BufReader::new(Cursor::new(buffer.into_inner()))).unwrap();
         let mut dataset = reader.next_dataset().unwrap().expect("expected a dataset");
         assert_eq!("DM", dataset.schema().dataset_name());
         assert_eq!(None, dataset.schema().record_count());
@@ -486,18 +462,13 @@ mod tests {
 
         let metadata = XportMetadata::builder().build();
         let mut buffer = Cursor::new(Vec::new());
-        let writer =
-            XportWriter::from_writer(&mut buffer, metadata, XportWriterOptions::default()).unwrap();
+        let writer = XportWriter::from_writer(&mut buffer, metadata).unwrap();
         let mut writer = writer.write_schema(schema).unwrap();
         writer.write_record(&[XportValue::from(75.3)]).unwrap();
         writer.finish().unwrap();
 
-        let reader_options = XportReaderOptions::builder().build();
-        let reader = XportReader::from_reader(
-            BufReader::new(Cursor::new(buffer.into_inner())),
-            &reader_options,
-        )
-        .unwrap();
+        let reader =
+            XportReader::from_reader(BufReader::new(Cursor::new(buffer.into_inner()))).unwrap();
         let mut dataset = reader.next_dataset().unwrap().expect("expected a dataset");
         assert_eq!(None, dataset.schema().record_count());
 
@@ -526,8 +497,7 @@ mod tests {
             .set_xport_file_version(XportFileVersion::V8)
             .build();
         let mut buffer = Cursor::new(Vec::new());
-        let writer =
-            XportWriter::from_writer(&mut buffer, metadata, XportWriterOptions::default()).unwrap();
+        let writer = XportWriter::from_writer(&mut buffer, metadata).unwrap();
         let mut writer = writer.write_schema(schema).unwrap();
         writer
             .write_record(&[XportValue::from("Headache")])
@@ -536,12 +506,8 @@ mod tests {
         writer.write_record(&[XportValue::from("Fatigue")]).unwrap();
         writer.set_count_and_finish().unwrap();
 
-        let reader_options = XportReaderOptions::builder().build();
-        let reader = XportReader::from_reader(
-            BufReader::new(Cursor::new(buffer.into_inner())),
-            &reader_options,
-        )
-        .unwrap();
+        let reader =
+            XportReader::from_reader(BufReader::new(Cursor::new(buffer.into_inner()))).unwrap();
         let mut dataset = reader.next_dataset().unwrap().expect("expected a dataset");
         assert_eq!(Some(3), dataset.schema().record_count());
         assert_eq!(
@@ -596,8 +562,7 @@ mod tests {
 
         let metadata = XportMetadata::builder().build();
         let mut buffer = Cursor::new(Vec::new());
-        let writer =
-            XportWriter::from_writer(&mut buffer, metadata, XportWriterOptions::default()).unwrap();
+        let writer = XportWriter::from_writer(&mut buffer, metadata).unwrap();
 
         // First dataset
         let mut writer = writer.write_schema(schema1).unwrap();
@@ -613,12 +578,8 @@ mod tests {
         writer.finish().unwrap();
 
         // Read back
-        let reader_options = XportReaderOptions::builder().build();
-        let reader = XportReader::from_reader(
-            BufReader::new(Cursor::new(buffer.into_inner())),
-            &reader_options,
-        )
-        .unwrap();
+        let reader =
+            XportReader::from_reader(BufReader::new(Cursor::new(buffer.into_inner()))).unwrap();
 
         let mut dataset1 = reader.next_dataset().unwrap().expect("expected dataset 1");
         assert_eq!("DM", dataset1.schema().dataset_name());
@@ -675,8 +636,7 @@ mod tests {
             .set_xport_file_version(XportFileVersion::V8)
             .build();
         let mut buffer = Cursor::new(Vec::new());
-        let writer =
-            XportWriter::from_writer(&mut buffer, metadata, XportWriterOptions::default()).unwrap();
+        let writer = XportWriter::from_writer(&mut buffer, metadata).unwrap();
 
         let mut writer = writer.write_schema(schema1).unwrap();
         writer
@@ -689,12 +649,8 @@ mod tests {
         writer.write_record(&[XportValue::from("HEIGHT")]).unwrap();
         writer.set_count_and_finish().unwrap();
 
-        let reader_options = XportReaderOptions::builder().build();
-        let reader = XportReader::from_reader(
-            BufReader::new(Cursor::new(buffer.into_inner())),
-            &reader_options,
-        )
-        .unwrap();
+        let reader =
+            XportReader::from_reader(BufReader::new(Cursor::new(buffer.into_inner()))).unwrap();
 
         let mut dataset1 = reader.next_dataset().unwrap().expect("expected dataset 1");
         assert_eq!("DM", dataset1.schema().dataset_name());
@@ -747,8 +703,7 @@ mod tests {
 
         let metadata = XportMetadata::builder().build();
         let mut buffer = Cursor::new(Vec::new());
-        let writer =
-            XportWriter::from_writer(&mut buffer, metadata, XportWriterOptions::default()).unwrap();
+        let writer = XportWriter::from_writer(&mut buffer, metadata).unwrap();
         let mut writer = writer.write_schema(schema).unwrap();
         writer
             .write_record(&[
@@ -766,12 +721,8 @@ mod tests {
             .unwrap();
         writer.set_count_and_finish().unwrap();
 
-        let reader_options = XportReaderOptions::builder().build();
-        let reader = XportReader::from_reader(
-            BufReader::new(Cursor::new(buffer.into_inner())),
-            &reader_options,
-        )
-        .unwrap();
+        let reader =
+            XportReader::from_reader(BufReader::new(Cursor::new(buffer.into_inner()))).unwrap();
         let mut dataset = reader.next_dataset().unwrap().expect("expected a dataset");
         assert_eq!("DM", dataset.schema().dataset_name());
 
@@ -805,18 +756,13 @@ mod tests {
 
         let metadata = XportMetadata::builder().build();
         let mut buffer = Cursor::new(Vec::new());
-        let writer =
-            XportWriter::from_writer(&mut buffer, metadata, XportWriterOptions::default()).unwrap();
+        let writer = XportWriter::from_writer(&mut buffer, metadata).unwrap();
         let mut writer = writer.write_schema(schema).unwrap();
         writer.write_record(&[XportValue::from("WEIGHT")]).unwrap();
         writer.finish().unwrap();
 
-        let reader_options = XportReaderOptions::builder().build();
-        let reader = XportReader::from_reader(
-            BufReader::new(Cursor::new(buffer.into_inner())),
-            &reader_options,
-        )
-        .unwrap();
+        let reader =
+            XportReader::from_reader(BufReader::new(Cursor::new(buffer.into_inner()))).unwrap();
         let mut dataset = reader.next_dataset().unwrap().expect("expected a dataset");
         assert_eq!(None, dataset.schema().record_count());
 
@@ -846,8 +792,7 @@ mod tests {
             .set_xport_file_version(XportFileVersion::V8)
             .build();
         let mut buffer = Cursor::new(Vec::new());
-        let writer =
-            XportWriter::from_writer(&mut buffer, metadata, XportWriterOptions::default()).unwrap();
+        let writer = XportWriter::from_writer(&mut buffer, metadata).unwrap();
         let mut writer = writer.write_schema(schema).unwrap();
         writer
             .write_record(&[XportValue::from("Headache")])
@@ -856,12 +801,8 @@ mod tests {
         writer.write_record(&[XportValue::from("Fatigue")]).unwrap();
         writer.set_count_and_finish().unwrap();
 
-        let reader_options = XportReaderOptions::builder().build();
-        let reader = XportReader::from_reader(
-            BufReader::new(Cursor::new(buffer.into_inner())),
-            &reader_options,
-        )
-        .unwrap();
+        let reader =
+            XportReader::from_reader(BufReader::new(Cursor::new(buffer.into_inner()))).unwrap();
         let mut dataset = reader.next_dataset().unwrap().expect("expected a dataset");
         assert_eq!(Some(3), dataset.schema().record_count());
 
@@ -913,8 +854,7 @@ mod tests {
 
         let metadata = XportMetadata::builder().build();
         let mut buffer = Cursor::new(Vec::new());
-        let writer =
-            XportWriter::from_writer(&mut buffer, metadata, XportWriterOptions::default()).unwrap();
+        let writer = XportWriter::from_writer(&mut buffer, metadata).unwrap();
 
         let mut writer = writer.write_schema(schema1).unwrap();
         writer.write_record(&[XportValue::from("SUBJ-01")]).unwrap();
@@ -927,12 +867,8 @@ mod tests {
             .unwrap();
         writer.finish().unwrap();
 
-        let reader_options = XportReaderOptions::builder().build();
-        let reader = XportReader::from_reader(
-            BufReader::new(Cursor::new(buffer.into_inner())),
-            &reader_options,
-        )
-        .unwrap();
+        let reader =
+            XportReader::from_reader(BufReader::new(Cursor::new(buffer.into_inner()))).unwrap();
 
         let mut dataset1 = reader.next_dataset().unwrap().expect("expected dataset 1");
         assert_eq!("DM", dataset1.schema().dataset_name());
@@ -989,8 +925,7 @@ mod tests {
             .set_xport_file_version(XportFileVersion::V8)
             .build();
         let mut buffer = Cursor::new(Vec::new());
-        let writer =
-            XportWriter::from_writer(&mut buffer, metadata, XportWriterOptions::default()).unwrap();
+        let writer = XportWriter::from_writer(&mut buffer, metadata).unwrap();
 
         let mut writer = writer.write_schema(schema1).unwrap();
         writer
@@ -1003,12 +938,8 @@ mod tests {
         writer.write_record(&[XportValue::from("HEIGHT")]).unwrap();
         writer.set_count_and_finish().unwrap();
 
-        let reader_options = XportReaderOptions::builder().build();
-        let reader = XportReader::from_reader(
-            BufReader::new(Cursor::new(buffer.into_inner())),
-            &reader_options,
-        )
-        .unwrap();
+        let reader =
+            XportReader::from_reader(BufReader::new(Cursor::new(buffer.into_inner()))).unwrap();
 
         let mut dataset1 = reader.next_dataset().unwrap().expect("expected dataset 1");
         assert_eq!("DM", dataset1.schema().dataset_name());
@@ -1046,20 +977,15 @@ mod tests {
 
         let metadata = XportMetadata::builder().build();
         let mut buffer = Cursor::new(Vec::new());
-        let writer =
-            XportWriter::from_writer(&mut buffer, metadata, XportWriterOptions::default()).unwrap();
+        let writer = XportWriter::from_writer(&mut buffer, metadata).unwrap();
         let mut writer = writer.write_schema(schema).unwrap();
         writer.write_record(&[XportValue::from(75.3)]).unwrap();
         writer.write_record(&[XportValue::from(0.0)]).unwrap();
         writer.write_record(&[XportValue::from(-123.456)]).unwrap();
         writer.set_count_and_finish().unwrap();
 
-        let reader_options = XportReaderOptions::builder().build();
-        let reader = XportReader::from_reader(
-            BufReader::new(Cursor::new(buffer.into_inner())),
-            &reader_options,
-        )
-        .unwrap();
+        let reader =
+            XportReader::from_reader(BufReader::new(Cursor::new(buffer.into_inner()))).unwrap();
         let mut dataset = reader.next_dataset().unwrap().expect("expected a dataset");
         assert_eq!(5, dataset.schema().variables()[0].value_length());
 
@@ -1092,13 +1018,11 @@ mod tests {
             .try_build()
             .unwrap();
 
-        let options = XportWriterOptions::builder()
-            .set_truncation_policy(SasVariableType::Character, TruncationPolicy::Report)
-            .build();
         let mut buffer = Cursor::new(Vec::new());
-        let writer =
-            XportWriter::from_writer(&mut buffer, XportMetadata::builder().build(), options)
-                .unwrap();
+        let writer = XportWriter::options()
+            .set_truncation_policy(SasVariableType::Character, TruncationPolicy::Report)
+            .from_writer(&mut buffer, XportMetadata::builder().build())
+            .unwrap();
         let mut writer = writer.write_schema(schema).unwrap();
 
         // "日本語テスト" is 18 bytes in UTF-8, won't fit in 8 bytes.
@@ -1126,12 +1050,8 @@ mod tests {
             .unwrap();
 
         let mut buffer = Cursor::new(Vec::new());
-        let writer = XportWriter::from_writer(
-            &mut buffer,
-            XportMetadata::builder().build(),
-            XportWriterOptions::default(),
-        )
-        .unwrap();
+        let writer =
+            XportWriter::from_writer(&mut buffer, XportMetadata::builder().build()).unwrap();
         let mut writer = writer.write_schema(schema).unwrap();
 
         // Same value, but Silent policy (the default) — no error.
@@ -1154,13 +1074,11 @@ mod tests {
             .try_build()
             .unwrap();
 
-        let options = XportWriterOptions::builder()
-            .set_truncation_policy(SasVariableType::Numeric, TruncationPolicy::Report)
-            .build();
         let mut buffer = Cursor::new(Vec::new());
-        let writer =
-            XportWriter::from_writer(&mut buffer, XportMetadata::builder().build(), options)
-                .unwrap();
+        let writer = XportWriter::options()
+            .set_truncation_policy(SasVariableType::Numeric, TruncationPolicy::Report)
+            .from_writer(&mut buffer, XportMetadata::builder().build())
+            .unwrap();
         let mut writer = writer.write_schema(schema).unwrap();
 
         // 75.3 needs precision beyond 3 bytes.
@@ -1188,12 +1106,8 @@ mod tests {
             .unwrap();
 
         let mut buffer = Cursor::new(Vec::new());
-        let writer = XportWriter::from_writer(
-            &mut buffer,
-            XportMetadata::builder().build(),
-            XportWriterOptions::default(),
-        )
-        .unwrap();
+        let writer =
+            XportWriter::from_writer(&mut buffer, XportMetadata::builder().build()).unwrap();
         let mut writer = writer.write_schema(schema).unwrap();
 
         // Same value, but Silent policy (the default) — no error.

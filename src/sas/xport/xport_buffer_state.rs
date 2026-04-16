@@ -10,7 +10,7 @@ use crate::sas::xport::xport_constants::{
 use crate::sas::xport::xport_error::XportErrorKind;
 use crate::sas::xport::xport_variable_extension_lengths::XportVariableExtensionLengths;
 use crate::sas::xport::{
-    Result, XportError, XportFileVersion, XportMetadataBuilder, XportReaderOptions,
+    Result, XportError, XportFileVersion, XportMetadataBuilder, XportReaderOptionsInternal,
     XportSchemaBuilder, XportVariable, XportVariableBuilder, converter,
 };
 use crate::sas::{SasJustification, SasVariableType};
@@ -26,7 +26,7 @@ pub(crate) struct XportBufferState {
 impl XportBufferState {
     /// Creates an `XportBufferState` from the given options.
     #[must_use]
-    pub fn from_options(options: &XportReaderOptions) -> Self {
+    pub fn from_options(options: &XportReaderOptionsInternal) -> Self {
         Self {
             decoder: Decoder::from_options(options),
             metadata_decoder: Decoder::metadata_from_options(options),
@@ -712,12 +712,13 @@ pub(crate) enum MemberHeaderCheck {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::sas::xport::XportReaderOptions;
     use crate::sas::xport::XportSchema;
     use crate::sas::xport::xport_constants::HEADER_LENGTH;
 
     /// Creates a default `XportBufferState` with UTF-8 encoding for use in tests.
     fn make_state() -> XportBufferState {
-        XportBufferState::from_options(&XportReaderOptions::builder().build())
+        XportBufferState::from_options(&XportReaderOptions::default().build())
     }
 
     /// Builds a valid 80-byte member header for the given version, with the

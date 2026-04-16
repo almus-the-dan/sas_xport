@@ -4,7 +4,7 @@ use super::{
     Result, XportDatasetVersion, XportError, XportFileVersion, XportMetadata, XportMetadataBuilder,
     XportSchema, XportSchemaBuilder, XportVariableBuilder,
 };
-use super::{XportReaderOptions, converter};
+use super::{XportReaderOptionsInternal, converter};
 use crate::sas::xport::xport_buffer_state::{
     MemberHeaderCheck, RemainingSectionV8, XportBufferState,
 };
@@ -52,7 +52,7 @@ impl<R: BufRead> XportBuffer<R> {
 
     /// Creates an `XportBuffer` from the given options.
     #[must_use]
-    pub fn from_reader(reader: R, options: &XportReaderOptions) -> Self {
+    pub fn from_reader(reader: R, options: &XportReaderOptionsInternal) -> Self {
         let state = XportBufferState::from_options(options);
         Self {
             state,

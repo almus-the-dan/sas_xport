@@ -106,6 +106,7 @@ pub struct XportMetadataBuilder {
 }
 
 impl Default for XportMetadataBuilder {
+    #[inline]
     fn default() -> Self {
         Self::new()
     }
@@ -127,24 +128,28 @@ impl XportMetadataBuilder {
     }
 
     /// Sets the SAS® transport file version.
+    #[inline]
     pub fn set_xport_file_version(&mut self, file_version: XportFileVersion) -> &mut Self {
         self.file_version = file_version;
         self
     }
 
     /// Sets symbol 1. This is usually the value "SAS".
+    #[inline]
     pub fn set_symbol1(&mut self, symbol1: impl Into<String>) -> &mut Self {
         self.symbol1 = symbol1.into();
         self
     }
 
     /// Sets symbol 2. This is usually the value "SAS".
+    #[inline]
     pub fn set_symbol2(&mut self, symbol2: impl Into<String>) -> &mut Self {
         self.symbol2 = symbol2.into();
         self
     }
 
     /// Sets the library value. This is usually "SASLIB".
+    #[inline]
     pub fn set_library(&mut self, library: impl Into<String>) -> &mut Self {
         self.library = library.into();
         self
@@ -152,6 +157,7 @@ impl XportMetadataBuilder {
 
     /// Sets the SAS® version. This is usually the specific version of the SAS®
     /// environment generating the file.
+    #[inline]
     pub fn set_sas_version(&mut self, sas_version: impl Into<String>) -> &mut Self {
         self.sas_version = Some(sas_version.into());
         self
@@ -159,12 +165,14 @@ impl XportMetadataBuilder {
 
     /// Clears the SAS® version. When cleared, this will be set automatically
     /// depending on the file version.
+    #[inline]
     pub fn clear_sas_version(&mut self) -> &mut Self {
         self.sas_version = None;
         self
     }
 
     /// Sets the operating system the SAS® environment ran on.
+    #[inline]
     pub fn set_operating_system(&mut self, operating_system: impl Into<String>) -> &mut Self {
         self.operating_system = operating_system.into();
         self

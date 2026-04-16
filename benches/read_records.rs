@@ -1,8 +1,7 @@
 use criterion::{Criterion, criterion_group, criterion_main};
 use sas_xport::sas::SasVariableType;
 use sas_xport::sas::xport::{
-    XportMetadata, XportReader, XportReaderOptions, XportSchema, XportValue, XportVariable,
-    XportWriter, XportWriterOptions,
+    XportMetadata, XportReader, XportSchema, XportValue, XportVariable, XportWriter,
 };
 use std::fs::File;
 use std::io::{BufReader, Cursor};
@@ -87,7 +86,7 @@ fn generate_xpt(path: &Path) {
     let schema = build_bench_schema();
     let template = build_template_record();
 
-    let writer = XportWriter::from_file(file, metadata, XportWriterOptions::default()).unwrap();
+    let writer = XportWriter::from_file(file, metadata).unwrap();
     let mut writer = writer.write_schema(schema).unwrap();
 
     for _ in 0..RECORD_COUNT {
@@ -125,8 +124,7 @@ fn read_all_zerocopy(c: &mut Criterion) {
     c.bench_function("read_all_zerocopy", |b| {
         b.iter(|| {
             let file = File::open(&path).unwrap();
-            let options = XportReaderOptions::builder().build();
-            let reader = XportReader::from_file(file, &options).unwrap();
+            let reader = XportReader::from_file(file).unwrap();
             let Some(mut dataset) = reader.next_dataset().unwrap() else {
                 panic!("No dataset found");
             };
@@ -151,8 +149,7 @@ fn read_all_iterator(c: &mut Criterion) {
     c.bench_function("read_all_iterator", |b| {
         b.iter(|| {
             let file = File::open(&path).unwrap();
-            let options = XportReaderOptions::builder().build();
-            let reader = XportReader::from_file(file, &options).unwrap();
+            let reader = XportReader::from_file(file).unwrap();
             let Some(mut dataset) = reader.next_dataset().unwrap() else {
                 panic!("No dataset found");
             };
@@ -181,8 +178,7 @@ fn read_all_cursor(c: &mut Criterion) {
         b.iter(|| {
             let cursor = Cursor::new(file_bytes.as_slice());
             let buf_reader = BufReader::new(cursor);
-            let options = XportReaderOptions::builder().build();
-            let reader = XportReader::from_reader(buf_reader, &options).unwrap();
+            let reader = XportReader::from_reader(buf_reader).unwrap();
             let Some(mut dataset) = reader.next_dataset().unwrap() else {
                 panic!("No dataset found");
             };

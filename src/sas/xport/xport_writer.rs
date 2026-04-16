@@ -1,8 +1,12 @@
 use super::xport_constants;
-use super::{Result, XportFileVersion, XportMetadata, XportWriterOptions, XportWriterWithMetadata};
+use super::{
+    Result, XportError, XportFileVersion, XportMetadata, XportWriterOptions,
+    XportWriterOptionsInternal, XportWriterWithMetadata,
+};
 use crate::sas::xport::xport_writer_state::XportWriterState;
 use std::fs::File;
 use std::io::{BufWriter, Write};
+use std::path::Path;
 
 /// Entry point for writing SAS® transport (XPORT) files. This type provides
 /// constructors only and is not instantiated directly.
@@ -17,14 +21,17 @@ impl XportWriter {
     /// returned writer supports record-count backpatching via the
     /// `set_count_and_*` methods on [`XportWriterWithSchema`](super::XportWriterWithSchema).
     ///
+    /// To configure encoding or truncation policies, use
+    /// [`options()`](Self::options) instead.
+    ///
     /// # Errors
     /// Returns an error if writing the library headers fails.
+    #[inline]
     pub fn from_file(
         file: File,
         metadata: XportMetadata,
-        options: XportWriterOptions,
     ) -> Result<XportWriterWithMetadata<BufWriter<File>>> {
-        Self::from_writer(BufWriter::new(file), metadata, options)
+        Self::from_writer(BufWriter::new(file), metadata)
     }
 
     /// Creates a writer from any `Write` implementor. The library headers
@@ -34,12 +41,60 @@ impl XportWriter {
     /// it in a [`BufWriter`] for better performance. [`from_file`](Self::from_file)
     /// does this automatically.
     ///
+    /// To configure encoding or truncation policies, use
+    /// [`options()`](Self::options) instead.
+    ///
     /// # Errors
     /// Returns an error if writing the library headers fails.
+    #[inline]
     pub fn from_writer<W: Write>(
         writer: W,
         metadata: XportMetadata,
-        options: XportWriterOptions,
+    ) -> Result<XportWriterWithMetadata<W>> {
+        Self::from_writer_with_options(writer, metadata, XportWriterOptionsInternal::default())
+    }
+
+    /// Creates a writer backed by a buffered file at the given path. The
+    /// library headers are written immediately.
+    ///
+    /// To configure encoding or truncation policies, use
+    /// [`options()`](Self::options) instead.
+    ///
+    /// # Errors
+    /// Returns an error if the file cannot be created or if writing the
+    /// library headers fails.
+    #[inline]
+    pub fn from_path<P: AsRef<Path>>(
+        path: P,
+        metadata: XportMetadata,
+    ) -> Result<XportWriterWithMetadata<BufWriter<File>>> {
+        let file = File::create(path.as_ref())
+            .map_err(|e| XportError::io("Failed to create the file", e))?;
+        Self::from_file(file, metadata)
+    }
+
+    /// Returns an option builder for writing a SAS® transport file with
+    /// custom settings.
+    ///
+    /// # Example
+    ///
+    /// ```rust,ignore
+    /// let writer = XportWriter::options()
+    ///     .set_encoding(encoding_rs::WINDOWS_1252)
+    ///     .from_path("out.xpt", metadata)?;
+    /// ```
+    #[inline]
+    #[must_use]
+    pub fn options() -> XportWriterOptions {
+        XportWriterOptions::default()
+    }
+
+    /// Creates a writer from any `Write` implementor using the given options.
+    /// The library headers are written immediately.
+    pub(crate) fn from_writer_with_options<W: Write>(
+        writer: W,
+        metadata: XportMetadata,
+        options: XportWriterOptionsInternal,
     ) -> Result<XportWriterWithMetadata<W>> {
         let mut state = XportWriterState::new(options, writer);
         let library_header = match metadata.file_version() {

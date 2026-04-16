@@ -1,7 +1,10 @@
 use super::xport_buffer::XportBuffer;
-use super::{Result, XportDataset, XportMetadata, XportReaderOptions};
+use super::{
+    Result, XportDataset, XportError, XportMetadata, XportReaderOptions, XportReaderOptionsInternal,
+};
 use std::fs::File;
 use std::io::{BufRead, BufReader};
+use std::path::Path;
 
 /// The result of opening a SAS® transport file. A valid transport file always
 /// contains metadata, but may or may not contain datasets.
@@ -21,26 +24,81 @@ impl<R> XportReader<R> {
 }
 
 impl XportReader<BufReader<File>> {
-    /// Opens a SAS® transport file using the given options. The file will
-    /// be buffered using the default buffer size.
+    /// Opens a SAS® transport file. The file will be buffered using the
+    /// default buffer size.
+    ///
+    /// To configure encoding or other options, use
+    /// [`options()`](Self::options) instead.
     ///
     /// # Errors
     /// An error is returned if:
     /// * An I/O error occurs while reading the file
     /// * An encoding error occurs while reading metadata or the schema
-    pub fn from_file(file: File, options: &XportReaderOptions) -> Result<Self> {
-        Self::from_reader(BufReader::new(file), options)
+    #[inline]
+    pub fn from_file(file: File) -> Result<Self> {
+        Self::from_reader(BufReader::new(file))
+    }
+
+    /// Opens a SAS® transport file at the given path. The file will be
+    /// buffered using the default buffer size.
+    ///
+    /// To configure encoding or other options, use
+    /// [`options()`](Self::options) instead.
+    ///
+    /// # Errors
+    /// An error is returned if:
+    /// * The file cannot be opened
+    /// * An I/O error occurs while reading the file
+    /// * An encoding error occurs while reading metadata or the schema
+    pub fn from_path<P: AsRef<Path>>(path: P) -> Result<Self> {
+        let file =
+            File::open(path.as_ref()).map_err(|e| XportError::io("Failed to open the file", e))?;
+        Self::from_file(file)
+    }
+
+    /// Returns an option builder for opening a SAS® transport file with
+    /// custom settings.
+    ///
+    /// # Example
+    ///
+    /// ```rust,ignore
+    /// let reader = XportReader::options()
+    ///     .set_encoding(encoding_rs::WINDOWS_1252)
+    ///     .from_path("data.xpt")?;
+    /// ```
+    #[inline]
+    #[must_use]
+    pub fn options() -> XportReaderOptions {
+        XportReaderOptions::default()
     }
 }
 
 impl<R: BufRead> XportReader<R> {
-    /// Opens a SAS® transport file from the given reader using the given options.
+    /// Opens a SAS® transport file from the given reader.
+    ///
+    /// To configure encoding or other options, use
+    /// [`options()`](XportReader::options) instead.
     ///
     /// # Errors
     /// An error is returned if:
     /// * An I/O error occurs while reading the file
     /// * An encoding error occurs while reading metadata or the schema
-    pub fn from_reader(reader: R, options: &XportReaderOptions) -> Result<Self> {
+    #[inline]
+    pub fn from_reader(reader: R) -> Result<Self> {
+        Self::from_reader_with_options(reader, &XportReaderOptionsInternal::default())
+    }
+
+    /// Opens a SAS® transport file from the given reader using the given
+    /// options.
+    ///
+    /// # Errors
+    /// An error is returned if:
+    /// * An I/O error occurs while reading the file
+    /// * An encoding error occurs while reading metadata or the schema
+    pub(crate) fn from_reader_with_options(
+        reader: R,
+        options: &XportReaderOptionsInternal,
+    ) -> Result<Self> {
         let mut buffer = XportBuffer::from_reader(reader, options);
         let metadata = buffer.read_metadata()?;
         let reader = XportReader { buffer, metadata };

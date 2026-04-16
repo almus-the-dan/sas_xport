@@ -1,6 +1,6 @@
 [package]
 name = "sas_xport"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
 description = "A pure Rust library for reading and writing SAS Transport (XPORT) files in version 5 and version 8 formats, with support for sync and async I/O, lazy record decoding, and character encoding conversion."
 license = "MIT"

@@ -144,6 +144,7 @@ impl SasDateTime {
 }
 
 impl Default for SasDateTime {
+    #[inline]
     fn default() -> Self {
         Self::new()
     }

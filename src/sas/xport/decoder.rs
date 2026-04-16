@@ -1,4 +1,4 @@
-use crate::sas::xport::XportReaderOptions;
+use crate::sas::xport::XportReaderOptionsInternal;
 use encoding_rs::Encoding;
 use std::borrow::Cow;
 
@@ -17,8 +17,8 @@ impl Decoder {
         Self { decoders }
     }
 
-    /// Creates a decoder for record data: primary encoding + user-specified fallbacks.
-    pub(crate) fn from_options(options: &XportReaderOptions) -> Self {
+    /// Creates a decoder for record data: primary encoding and user-specified fallbacks.
+    pub(crate) fn from_options(options: &XportReaderOptionsInternal) -> Self {
         Self::new(options.encoding(), options.fallback_encodings())
     }
 
@@ -26,7 +26,7 @@ impl Decoder {
     /// may contain extended characters. Includes the user-specified fallbacks
     /// and, if neither the primary nor any fallback is ASCII-compatible, appends
     /// UTF-8 as a safety net.
-    pub(crate) fn metadata_from_options(options: &XportReaderOptions) -> Self {
+    pub(crate) fn metadata_from_options(options: &XportReaderOptionsInternal) -> Self {
         let mut fallback_encodings = Vec::from(options.fallback_encodings());
         if !options.encoding().is_ascii_compatible() {
             let has_ascii_compatible = fallback_encodings.iter().any(|e| e.is_ascii_compatible());
@@ -72,6 +72,7 @@ impl Decoder {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::sas::xport::XportReaderOptions;
 
     #[test]
     fn test_ascii_decoder_decodes_ascii() {
@@ -168,7 +169,7 @@ mod tests {
 
     #[test]
     fn test_from_options_uses_primary_and_fallbacks() {
-        let options = XportReaderOptions::builder()
+        let options = XportReaderOptions::default()
             .add_fallback_encoding(encoding_rs::WINDOWS_1252)
             .build();
         let decoder = Decoder::from_options(&options);
@@ -178,7 +179,7 @@ mod tests {
 
     #[test]
     fn test_metadata_from_options_adds_utf8_for_non_ascii_primary() {
-        let options = XportReaderOptions::builder()
+        let options = XportReaderOptions::default()
             .set_encoding(encoding_rs::SHIFT_JIS)
             .build();
         let decoder = Decoder::metadata_from_options(&options);
@@ -189,7 +190,7 @@ mod tests {
 
     #[test]
     fn test_metadata_from_options_skips_utf8_when_fallback_is_ascii_compatible() {
-        let options = XportReaderOptions::builder()
+        let options = XportReaderOptions::default()
             .set_encoding(encoding_rs::SHIFT_JIS)
             .add_fallback_encoding(encoding_rs::WINDOWS_1252)
             .build();
@@ -202,7 +203,7 @@ mod tests {
 
     #[test]
     fn test_metadata_from_options_ascii_compatible_primary_no_extra_utf8() {
-        let options = XportReaderOptions::builder()
+        let options = XportReaderOptions::default()
             .set_encoding(encoding_rs::UTF_8)
             .build();
         let decoder = Decoder::metadata_from_options(&options);

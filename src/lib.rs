@@ -26,11 +26,10 @@
 //!
 //! ```rust
 //! use std::fs::File;
-//! use sas_xport::sas::xport::{XportReader, XportReaderOptions, Result};
+//! use sas_xport::sas::xport::{XportReader, Result};
 //!
 //! pub fn read_xport_file(file: File) -> Result<()> {
-//!     let options = XportReaderOptions::builder().build();
-//!     let reader = XportReader::from_file(file, &options)?;
+//!     let reader = XportReader::from_file(file)?;
 //!     let metadata = reader.metadata().clone();
 //!     let Some(mut dataset) = reader.next_dataset()? else {
 //!         println!("File contains no datasets");
@@ -58,11 +57,10 @@
 //!
 //! ```rust
 //! use std::fs::File;
-//! use sas_xport::sas::xport::{XportReader, XportReaderOptions, Result};
+//! use sas_xport::sas::xport::{XportReader, Result};
 //!
 //! pub fn read_xport_file(file: File) -> Result<()> {
-//!     let options = XportReaderOptions::builder().build();
-//!     let reader = XportReader::from_file(file, &options)?;
+//!     let reader = XportReader::from_file(file)?;
 //!     let Some(mut dataset) = reader.next_dataset()? else {
 //!         println!("File contains no datasets");
 //!         return Ok(());
@@ -88,11 +86,10 @@
 //!
 //! ```rust
 //! use std::fs::File;
-//! use sas_xport::sas::xport::{XportReader, XportReaderOptions, Result};
+//! use sas_xport::sas::xport::{XportReader, Result};
 //!
 //! pub fn read_xport_file(file: File) -> Result<()> {
-//!     let options = XportReaderOptions::builder().build();
-//!     let reader = XportReader::from_file(file, &options)?;
+//!     let reader = XportReader::from_file(file)?;
 //!     let Some(mut dataset) = reader.next_dataset()? else {
 //!         println!("File contains no datasets");
 //!         return Ok(());
@@ -130,7 +127,6 @@
 //! use sas_xport::sas::SasVariableType;
 //! use sas_xport::sas::xport::{
 //!     Result, XportMetadata, XportSchema, XportValue, XportVariable, XportWriter,
-//!     XportWriterOptions,
 //! };
 //!
 //! pub fn write_xport_file(file: File) -> Result<()> {
@@ -153,7 +149,7 @@
 //!         .add_variable(age)
 //!         .try_build()?;
 //!
-//!     let writer = XportWriter::from_file(file, metadata, XportWriterOptions::default())?;
+//!     let writer = XportWriter::from_file(file, metadata)?;
 //!     let mut writer = writer.write_schema(schema)?;
 //!     writer.write_record(&[XportValue::from("STUDY-001"), XportValue::from(35.0)])?;
 //!     writer.write_record(&[XportValue::from("STUDY-001"), XportValue::from(42.5)])?;

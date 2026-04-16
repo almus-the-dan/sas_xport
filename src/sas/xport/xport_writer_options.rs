@@ -1,46 +1,30 @@
+use super::{Result, XportError, XportMetadata, XportWriter, XportWriterWithMetadata};
 use crate::sas::SasVariableType;
 use encoding_rs::Encoding;
+use std::fs::File;
+use std::io::{BufWriter, Write};
+use std::path::Path;
 
-/// Controls whether the writer reports an error when a value must be
-/// truncated to fit its designated field width.
-#[derive(Copy, Clone, Debug, Default, Hash, PartialEq, Eq)]
-pub enum TruncationPolicy {
-    /// Silently truncate the value (current default behavior).
-    #[default]
-    Silent,
-    /// Return an error if truncation would occur.
-    Report,
-}
+use super::TruncationPolicy;
 
 /// Options to control the behavior of writing a SAS® transport file.
 #[derive(Clone, Debug)]
-pub struct XportWriterOptions {
+pub(crate) struct XportWriterOptionsInternal {
     encoding: &'static Encoding,
     character_truncation_policy: TruncationPolicy,
     numeric_truncation_policy: TruncationPolicy,
 }
 
-impl XportWriterOptions {
-    /// Creates a builder for constructing `XportWriterOptions`. By default, the
-    /// builder uses UTF-8 encoding and silent truncation for both character and
-    /// numeric values.
-    #[inline]
-    #[must_use]
-    pub fn builder() -> XportWriterOptionsBuilder {
-        XportWriterOptionsBuilder::new()
-    }
-
+impl XportWriterOptionsInternal {
     /// Gets the encoding used for writing character values.
-    #[inline]
     #[must_use]
-    pub fn encoding(&self) -> &'static Encoding {
+    pub(crate) fn encoding(&self) -> &'static Encoding {
         self.encoding
     }
 
     /// Gets the truncation policy for the given variable type.
-    #[inline]
     #[must_use]
-    pub fn truncation_policy(&self, variable_type: SasVariableType) -> TruncationPolicy {
+    pub(crate) fn truncation_policy(&self, variable_type: SasVariableType) -> TruncationPolicy {
         match variable_type {
             SasVariableType::Character => self.character_truncation_policy,
             SasVariableType::Numeric => self.numeric_truncation_policy,
@@ -48,27 +32,29 @@ impl XportWriterOptions {
     }
 }
 
-impl Default for XportWriterOptions {
+impl Default for XportWriterOptionsInternal {
     fn default() -> Self {
-        XportWriterOptionsBuilder::new().build_into()
+        XportWriterOptions::default().build()
     }
 }
 
 /// A builder for configuring `XportWriterOptions`.
 #[derive(Clone, Debug)]
-pub struct XportWriterOptionsBuilder {
+pub struct XportWriterOptions {
     encoding: &'static Encoding,
     character_truncation_policy: TruncationPolicy,
     numeric_truncation_policy: TruncationPolicy,
 }
 
-impl Default for XportWriterOptionsBuilder {
+impl Default for XportWriterOptions {
+    #[inline]
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl XportWriterOptionsBuilder {
+impl XportWriterOptions {
+    #[must_use]
     fn new() -> Self {
         Self {
             encoding: encoding_rs::UTF_8,
@@ -99,27 +85,115 @@ impl XportWriterOptionsBuilder {
     }
 
     /// Builds an `XportWriterOptions` from the current configuration.
-    #[inline]
     #[must_use]
-    pub fn build(&self) -> XportWriterOptions {
-        self.clone().build_into()
-    }
-
-    /// Builds an `XportWriterOptions` from the current configuration,
-    /// consuming the builder.
-    #[must_use]
-    pub fn build_into(self) -> XportWriterOptions {
-        XportWriterOptions {
+    pub(crate) fn build(&self) -> XportWriterOptionsInternal {
+        XportWriterOptionsInternal {
             encoding: self.encoding,
             character_truncation_policy: self.character_truncation_policy,
             numeric_truncation_policy: self.numeric_truncation_policy,
         }
     }
+
+    /// Creates a writer backed by a buffered file using the configured
+    /// options. The library headers are written immediately.
+    ///
+    /// # Errors
+    /// Returns an error if writing the library headers fails.
+    //noinspection RsSelfConvention
+    #[inline]
+    pub fn from_file(
+        &self,
+        file: File,
+        metadata: XportMetadata,
+    ) -> Result<XportWriterWithMetadata<BufWriter<File>>> {
+        self.from_writer(BufWriter::new(file), metadata)
+    }
+
+    /// Creates a writer from any `Write` implementor using the configured
+    /// options. The library headers are written immediately.
+    ///
+    /// # Errors
+    /// Returns an error if writing the library headers fails.
+    //noinspection RsSelfConvention
+    #[inline]
+    pub fn from_writer<W: Write>(
+        &self,
+        writer: W,
+        metadata: XportMetadata,
+    ) -> Result<XportWriterWithMetadata<W>> {
+        let options = self.build();
+        XportWriter::from_writer_with_options(writer, metadata, options)
+    }
+
+    /// Creates a writer backed by a buffered file at the given path using
+    /// the configured options. The library headers are written immediately.
+    ///
+    /// # Errors
+    /// Returns an error if the file cannot be created or if writing the
+    /// library headers fails.
+    //noinspection RsSelfConvention
+    pub fn from_path<P: AsRef<Path>>(
+        &self,
+        path: P,
+        metadata: XportMetadata,
+    ) -> Result<XportWriterWithMetadata<BufWriter<File>>> {
+        let file = File::create(path.as_ref())
+            .map_err(|e| XportError::io("Failed to create the file", e))?;
+        self.from_file(file, metadata)
+    }
 }
 
-impl From<XportWriterOptionsBuilder> for XportWriterOptions {
-    fn from(builder: XportWriterOptionsBuilder) -> Self {
-        builder.build_into()
+#[cfg(feature = "tokio")]
+impl XportWriterOptions {
+    /// Creates a writer backed by a buffered async file using the configured
+    /// options. The library headers are written immediately.
+    ///
+    /// # Errors
+    /// Returns an error if writing the library headers fails.
+    //noinspection RsSelfConvention
+    #[inline]
+    pub async fn from_tokio_file(
+        &self,
+        file: tokio::fs::File,
+        metadata: XportMetadata,
+    ) -> Result<super::AsyncXportWriterWithMetadata<tokio::io::BufWriter<tokio::fs::File>>> {
+        self.from_tokio_writer(tokio::io::BufWriter::new(file), metadata)
+            .await
+    }
+
+    /// Creates a writer from any `AsyncWrite` implementor using the
+    /// configured options. The library headers are written immediately.
+    ///
+    /// # Errors
+    /// Returns an error if writing the library headers fails.
+    //noinspection RsSelfConvention
+    #[inline]
+    pub async fn from_tokio_writer<W: tokio::io::AsyncWrite + Unpin>(
+        &self,
+        writer: W,
+        metadata: XportMetadata,
+    ) -> Result<super::AsyncXportWriterWithMetadata<W>> {
+        let options = self.build();
+        super::AsyncXportWriter::from_writer_with_options(writer, metadata, options).await
+    }
+
+    /// Creates a writer backed by a buffered async file at the given path
+    /// using the configured options. The library headers are written
+    /// immediately.
+    ///
+    /// # Errors
+    /// Returns an error if the file cannot be created or if writing the
+    /// library headers fails.
+    //noinspection RsSelfConvention
+    pub async fn from_tokio_path<P: AsRef<Path>>(
+        &self,
+        path: P,
+        metadata: XportMetadata,
+    ) -> Result<super::AsyncXportWriterWithMetadata<tokio::io::BufWriter<tokio::fs::File>>> {
+        let file = tokio::fs::File::create(path.as_ref())
+            .await
+            .map_err(|e| XportError::io("Failed to create the file", e))?;
+        self.from_tokio_file(file, metadata).await
     }
 }
 
@@ -129,13 +203,13 @@ mod tests {
 
     #[test]
     fn default_encoding_is_utf8() {
-        let options = XportWriterOptions::default();
+        let options = XportWriterOptionsInternal::default();
         assert_eq!(options.encoding(), encoding_rs::UTF_8);
     }
 
     #[test]
     fn default_character_truncation_policy_is_silent() {
-        let options = XportWriterOptions::default();
+        let options = XportWriterOptionsInternal::default();
         assert_eq!(
             options.truncation_policy(SasVariableType::Character),
             TruncationPolicy::Silent,
@@ -144,7 +218,7 @@ mod tests {
 
     #[test]
     fn default_numeric_truncation_policy_is_silent() {
-        let options = XportWriterOptions::default();
+        let options = XportWriterOptionsInternal::default();
         assert_eq!(
             options.truncation_policy(SasVariableType::Numeric),
             TruncationPolicy::Silent,
@@ -153,8 +227,8 @@ mod tests {
 
     #[test]
     fn builder_default_matches_default() {
-        let from_default = XportWriterOptions::default();
-        let from_builder = XportWriterOptions::builder().build();
+        let from_default = XportWriterOptionsInternal::default();
+        let from_builder = XportWriterOptions::default().build();
         assert_eq!(from_default.encoding(), from_builder.encoding());
         assert_eq!(
             from_default.truncation_policy(SasVariableType::Character),
@@ -168,7 +242,7 @@ mod tests {
 
     #[test]
     fn set_encoding() {
-        let options = XportWriterOptions::builder()
+        let options = XportWriterOptions::default()
             .set_encoding(encoding_rs::WINDOWS_1252)
             .build();
         assert_eq!(options.encoding(), encoding_rs::WINDOWS_1252);
@@ -176,7 +250,7 @@ mod tests {
 
     #[test]
     fn set_character_truncation_policy() {
-        let options = XportWriterOptions::builder()
+        let options = XportWriterOptions::default()
             .set_truncation_policy(SasVariableType::Character, TruncationPolicy::Report)
             .build();
         assert_eq!(
@@ -191,7 +265,7 @@ mod tests {
 
     #[test]
     fn set_numeric_truncation_policy() {
-        let options = XportWriterOptions::builder()
+        let options = XportWriterOptions::default()
             .set_truncation_policy(SasVariableType::Numeric, TruncationPolicy::Report)
             .build();
         assert_eq!(
@@ -206,7 +280,7 @@ mod tests {
 
     #[test]
     fn set_both_truncation_policies() {
-        let options = XportWriterOptions::builder()
+        let options = XportWriterOptions::default()
             .set_truncation_policy(SasVariableType::Character, TruncationPolicy::Report)
             .set_truncation_policy(SasVariableType::Numeric, TruncationPolicy::Report)
             .build();
@@ -222,26 +296,10 @@ mod tests {
 
     #[test]
     fn build_does_not_consume_builder() {
-        let mut builder = XportWriterOptions::builder();
+        let mut builder = XportWriterOptions::default();
         builder.set_encoding(encoding_rs::WINDOWS_1252);
         let first = builder.build();
         let second = builder.build();
         assert_eq!(first.encoding(), second.encoding());
-    }
-
-    #[test]
-    fn build_into_consumes_builder() {
-        let mut builder = XportWriterOptions::builder();
-        builder.set_encoding(encoding_rs::SHIFT_JIS);
-        let options = builder.build_into();
-        assert_eq!(options.encoding(), encoding_rs::SHIFT_JIS);
-    }
-
-    #[test]
-    fn from_builder() {
-        let mut builder = XportWriterOptions::builder();
-        builder.set_encoding(encoding_rs::EUC_JP);
-        let options: XportWriterOptions = builder.into();
-        assert_eq!(options.encoding(), encoding_rs::EUC_JP);
     }
 }

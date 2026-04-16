@@ -3,8 +3,7 @@ use sas_xport::sas::SasVariableType;
 #[cfg(feature = "tokio")]
 use sas_xport::sas::xport::{AsyncXportReader, AsyncXportWriter};
 use sas_xport::sas::xport::{
-    XportMetadata, XportReader, XportReaderOptions, XportSchema, XportValue, XportVariable,
-    XportWriter, XportWriterOptions,
+    XportMetadata, XportReader, XportSchema, XportValue, XportVariable, XportWriter,
 };
 use std::fs::File;
 use std::time::Instant;
@@ -107,7 +106,7 @@ fn run_write(tmp: &NamedTempFile, record_count: usize) -> (std::time::Duration, 
 
     let start = Instant::now();
     let metadata = XportMetadata::builder().build();
-    let writer = XportWriter::from_file(file, metadata, XportWriterOptions::default()).unwrap();
+    let writer = XportWriter::from_file(file, metadata).unwrap();
     let mut writer = writer.write_schema(schema).unwrap();
     for _ in 0..record_count {
         writer.write_record(&template).unwrap();
@@ -124,8 +123,7 @@ fn run_read(tmp: &NamedTempFile) -> (std::time::Duration, u64, u64) {
     let file = File::open(tmp.path()).unwrap();
 
     let start = Instant::now();
-    let options = XportReaderOptions::builder().build();
-    let reader = XportReader::from_file(file, &options).unwrap();
+    let reader = XportReader::from_file(file).unwrap();
     let Some(mut dataset) = reader.next_dataset().unwrap() else {
         panic!("No dataset found");
     };
@@ -152,9 +150,7 @@ async fn run_async_write(tmp: &NamedTempFile, record_count: usize) -> (std::time
 
     let start = Instant::now();
     let metadata = XportMetadata::builder().build();
-    let writer = AsyncXportWriter::from_file(file, metadata, XportWriterOptions::default())
-        .await
-        .unwrap();
+    let writer = AsyncXportWriter::from_file(file, metadata).await.unwrap();
     let mut writer = writer.write_schema(schema).await.unwrap();
     for _ in 0..record_count {
         writer.write_record(&template).await.unwrap();
@@ -172,8 +168,7 @@ async fn run_async_read(tmp: &NamedTempFile) -> (std::time::Duration, u64, u64) 
     let file = tokio::fs::File::open(tmp.path()).await.unwrap();
 
     let start = Instant::now();
-    let options = XportReaderOptions::builder().build();
-    let reader = AsyncXportReader::from_file(file, &options).await.unwrap();
+    let reader = AsyncXportReader::from_file(file).await.unwrap();
     let Some(mut dataset) = reader.next_dataset().await.unwrap() else {
         panic!("No dataset found");
     };

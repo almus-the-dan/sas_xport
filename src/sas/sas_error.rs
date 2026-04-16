@@ -15,6 +15,7 @@ impl SasError {
     ///
     /// Accepts `&'static str`, `String`, or `Cow<'static, str>`.
     /// Static strings avoid allocation; dynamic strings are stored owned.
+    #[inline]
     #[must_use]
     pub fn new(message: impl Into<Cow<'static, str>>) -> Self {
         Self {
@@ -28,6 +29,7 @@ impl SasError {
     ///
     /// Accepts `&'static str`, `String`, or `Cow<'static, str>`.
     /// Static strings avoid allocation; dynamic strings are stored owned.
+    #[inline]
     #[must_use]
     pub fn wrap(
         message: impl Into<Cow<'static, str>>,

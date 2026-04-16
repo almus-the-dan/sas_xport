@@ -1,8 +1,8 @@
 use super::xport_constants;
 use super::{Result, XportError, XportMetadata, XportSchema, XportValue, XportWriterWithMetadata};
 use crate::sas::xport::converter::{numeric_encoded_length, validate_values};
+use crate::sas::xport::truncation_policy::TruncationPolicy;
 use crate::sas::xport::xport_error::{TruncatedVariable, XportErrorKind, XportSection};
-use crate::sas::xport::xport_writer_options::TruncationPolicy;
 use crate::sas::xport::xport_writer_state::XportWriterState;
 use crate::sas::{SasFloat64, SasVariableType};
 use std::io::{Seek, Write};

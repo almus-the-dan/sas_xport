@@ -113,6 +113,7 @@ impl SasMissingValue {
 
 impl Default for SasMissingValue {
     /// Returns [`Self::PERIOD`].
+    #[inline]
     fn default() -> Self {
         Self::PERIOD
     }

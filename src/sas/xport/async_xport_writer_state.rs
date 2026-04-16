@@ -3,13 +3,13 @@ use crate::sas::xport::converter::{
     self, format_record_count, padding, prepare_date_time, prepare_string,
 };
 use crate::sas::xport::xport_error::XportErrorKind;
-use crate::sas::xport::xport_writer_options::XportWriterOptions;
+use crate::sas::xport::xport_writer_options::XportWriterOptionsInternal;
 use crate::sas::xport::{Result, XportError};
 use tokio::io::{AsyncSeek, AsyncSeekExt, AsyncWrite, AsyncWriteExt};
 
 #[derive(Debug)]
 pub(crate) struct AsyncXportWriterState<W> {
-    options: XportWriterOptions,
+    options: XportWriterOptionsInternal,
     writer: W,
     buffer: Vec<u8>,
     position: u64,
@@ -17,7 +17,7 @@ pub(crate) struct AsyncXportWriterState<W> {
 
 impl<W> AsyncXportWriterState<W> {
     #[must_use]
-    pub fn new(options: XportWriterOptions, writer: W) -> Self {
+    pub fn new(options: XportWriterOptionsInternal, writer: W) -> Self {
         Self {
             options,
             writer,
@@ -27,7 +27,7 @@ impl<W> AsyncXportWriterState<W> {
     }
 
     #[must_use]
-    pub fn options(&self) -> &XportWriterOptions {
+    pub fn options(&self) -> &XportWriterOptionsInternal {
         &self.options
     }
 
