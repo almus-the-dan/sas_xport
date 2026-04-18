@@ -152,7 +152,8 @@ impl<W: Write> XportWriterWithSchema<W> {
         Ok(XportWriterWithMetadata::new(state, metadata))
     }
 
-    /// Pads the record area to an 80-byte boundary and flushes the writer.
+    /// Pads the record area to an 80-byte boundary, flushes the writer,
+    /// and returns the inner writer.
     ///
     /// Does **not** set the record count in the observation header. For
     /// seekable writers, use
@@ -160,9 +161,13 @@ impl<W: Write> XportWriterWithSchema<W> {
     ///
     /// # Errors
     /// Returns an error if an I/O error occurs during padding or flushing.
-    pub fn finish(mut self) -> Result<()> {
+    #[allow(clippy::missing_panics_doc)]
+    pub fn finish(mut self) -> Result<W> {
         self.pad_to_boundary()?;
-        self.state_mut().flush()
+        let mut state = self.state.expect("state taken after finish");
+        state.flush()?;
+        let writer = state.into_writer();
+        Ok(writer)
     }
 
     fn pad_to_boundary(&mut self) -> Result<()> {
@@ -214,14 +219,14 @@ impl<W: Write + Seek> XportWriterWithSchema<W> {
     }
 
     /// Sets the record count in the V8/V9 observation header, pads the
-    /// record area, and flushes the writer.
+    /// record area, flushes the writer, and returns the inner writer.
     ///
     /// For V5 datasets, this behaves identically to [`finish`](Self::finish).
     ///
     /// # Errors
     /// Returns an error if an I/O error occurs during seeking, writing,
     /// padding, or flushing.
-    pub fn set_count_and_finish(mut self) -> Result<()> {
+    pub fn set_count_and_finish(mut self) -> Result<W> {
         self.seek_and_set_record_count()?;
         self.finish()
     }
@@ -232,30 +237,5 @@ impl<W: Write + Seek> XportWriterWithSchema<W> {
             self.state_mut().write_record_count(offset, record_count)?;
         }
         Ok(())
-    }
-}
-
-impl<W: Write> Drop for XportWriterWithSchema<W> {
-    /// Best-effort finalization: pads to the 80-byte boundary and flushes.
-    /// Does not set the record count. Errors are silently ignored.
-    ///
-    /// Use [`finish`](Self::finish) or
-    /// [`set_count_and_finish`](Self::set_count_and_finish) for error
-    /// handling.
-    fn drop(&mut self) {
-        let Some(state) = self.state.as_mut() else {
-            return;
-        };
-        let Ok(header_length) = u64::try_from(xport_constants::HEADER_LENGTH) else {
-            return;
-        };
-        let remaining = state.position() % header_length;
-        if remaining != 0 {
-            let Ok(padding_length) = usize::try_from(header_length - remaining) else {
-                return;
-            };
-            let _ = state.write_padding(b' ', padding_length, "Failed to pad on drop");
-        }
-        let _ = state.flush();
     }
 }

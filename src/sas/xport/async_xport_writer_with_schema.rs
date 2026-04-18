@@ -153,7 +153,8 @@ impl<W: AsyncWrite + Unpin> AsyncXportWriterWithSchema<W> {
         Ok(AsyncXportWriterWithMetadata::new(state, metadata))
     }
 
-    /// Pads the record area to an 80-byte boundary and flushes the writer.
+    /// Pads the record area to an 80-byte boundary, flushes the writer,
+    /// and returns the inner writer.
     ///
     /// Does **not** set the record count in the observation header. For
     /// seekable writers, use
@@ -161,9 +162,12 @@ impl<W: AsyncWrite + Unpin> AsyncXportWriterWithSchema<W> {
     ///
     /// # Errors
     /// Returns an error if an I/O error occurs during padding or flushing.
-    pub async fn finish(mut self) -> Result<()> {
+    #[allow(clippy::missing_panics_doc)]
+    pub async fn finish(mut self) -> Result<W> {
         self.pad_to_boundary().await?;
-        self.state_mut().flush().await
+        let mut state = self.state.take().expect("state taken after finish");
+        state.flush().await?;
+        Ok(state.into_writer())
     }
 
     async fn pad_to_boundary(&mut self) -> Result<()> {
@@ -217,14 +221,14 @@ impl<W: AsyncWrite + AsyncSeek + Unpin> AsyncXportWriterWithSchema<W> {
     }
 
     /// Sets the record count in the V8/V9 observation header, pads the
-    /// record area, and flushes the writer.
+    /// record area, flushes the writer, and returns the inner writer.
     ///
     /// For V5 datasets, this behaves identically to [`finish`](Self::finish).
     ///
     /// # Errors
     /// Returns an error if an I/O error occurs during seeking, writing,
     /// padding, or flushing.
-    pub async fn set_count_and_finish(mut self) -> Result<()> {
+    pub async fn set_count_and_finish(mut self) -> Result<W> {
         self.seek_and_set_record_count().await?;
         self.finish().await
     }

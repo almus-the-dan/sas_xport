@@ -153,7 +153,8 @@
 //!     let mut writer = writer.write_schema(schema)?;
 //!     writer.write_record(&[XportValue::from("STUDY-001"), XportValue::from(35.0)])?;
 //!     writer.write_record(&[XportValue::from("STUDY-001"), XportValue::from(42.5)])?;
-//!     writer.finish()
+//!     writer.finish()?; // Discards the returned inner writer
+//!     Ok(())
 //! }
 //! ```
 //!

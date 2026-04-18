@@ -35,6 +35,11 @@ impl<W> AsyncXportWriterState<W> {
     pub fn position(&self) -> u64 {
         self.position
     }
+
+    #[must_use]
+    pub fn into_writer(self) -> W {
+        self.writer
+    }
 }
 
 impl<W: AsyncWrite + Unpin> AsyncXportWriterState<W> {
