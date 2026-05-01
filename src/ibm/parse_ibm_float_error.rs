@@ -34,12 +34,14 @@ impl Error for ParseIbmFloatError {
 }
 
 impl From<ParseFloatError> for ParseIbmFloatError {
+    #[inline]
     fn from(value: ParseFloatError) -> Self {
         Self::InvalidFloat(value)
     }
 }
 
 impl From<IbmFloatError> for ParseIbmFloatError {
+    #[inline]
     fn from(value: IbmFloatError) -> Self {
         Self::Conversion(value)
     }

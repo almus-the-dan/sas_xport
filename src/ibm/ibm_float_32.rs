@@ -102,6 +102,7 @@ impl IbmFloat32 {
     /// suggest "free" or "strict" semantics, and neither is true here. The
     /// dual `From<IbmFloat32> for IbmFloat64` widening *is* a `From` impl
     /// because that direction is lossless.
+    #[inline]
     #[must_use]
     pub fn from_ibm_float_64_lossy(ibm64: IbmFloat64) -> Self {
         let b = ibm64.to_be_bytes();
@@ -118,6 +119,7 @@ impl IbmFloat32 {
     /// down to IBM32's 24-bit mantissa is silent. We don't expose this as
     /// a public `TryFrom<f64>` because trait conversions suggest a strict
     /// guarantee that doesn't fully hold here.
+    #[inline]
     pub fn try_from_f64_lossy(value: f64) -> Result<Self, IbmFloatError> {
         let value = IbmFloat64::try_from(value)?;
         Ok(Self::from_ibm_float_64_lossy(value))
@@ -132,6 +134,7 @@ impl IbmFloat32 {
     /// alignment can silently truncate up to 3 bits when the IBM32
     /// mantissa's leading hex digit is small ("wobbling precision"). No
     /// `TryFrom<f32>` trait impl for the same reason as f64.
+    #[inline]
     pub fn try_from_f32_lossy(value: f32) -> Result<Self, IbmFloatError> {
         Self::try_from_f64_lossy(f64::from(value))
     }
