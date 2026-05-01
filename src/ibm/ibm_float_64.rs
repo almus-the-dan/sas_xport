@@ -198,6 +198,24 @@ impl TryFrom<f64> for IbmFloat64 {
     }
 }
 
+impl TryFrom<f32> for IbmFloat64 {
+    type Error = IbmFloatError;
+
+    /// Strictly converts an `f32` to an `IbmFloat64` via the lossless
+    /// `f32 → f64` widening cast.
+    ///
+    /// The conversion is mantissa-exact: f32's 24-bit mantissa fits inside
+    /// IBM64's 56-bit mantissa with margin, and f32's entire finite range
+    /// sits inside IBM HFP's range (~5.4e-79 to ~7.2e75), so neither
+    /// overflow nor underflow can fire from a finite f32 input. Only
+    /// `NotANumber`, `PositiveInfinity`, and `NegativeInfinity` are
+    /// reachable in practice.
+    #[inline]
+    fn try_from(value: f32) -> Result<Self, Self::Error> {
+        Self::try_from(f64::from(value))
+    }
+}
+
 impl From<IbmFloat64> for f64 {
     /// Convert an `IbmFloat64` to an `f64`.
     fn from(value: IbmFloat64) -> f64 {
@@ -646,6 +664,94 @@ mod tests {
         let ibm = IbmFloat64::try_from(118.625).unwrap();
         assert_eq!(format!("{ibm:E}"), format!("{:E}", f64::from(ibm)));
         assert_eq!(format!("{ibm:.3E}"), format!("{:.3E}", f64::from(ibm)));
+    }
+
+    #[test]
+    fn try_from_f32_one() {
+        let x = IbmFloat64::try_from(1.0_f32).unwrap();
+        let expected = IbmFloat64::from_be_bytes([0x41, 0x10, 0, 0, 0, 0, 0, 0]);
+        assert_eq!(expected, x);
+    }
+
+    #[test]
+    fn try_from_f32_negative_one() {
+        let x = IbmFloat64::try_from(-1.0_f32).unwrap();
+        let expected = IbmFloat64::from_be_bytes([0xC1, 0x10, 0, 0, 0, 0, 0, 0]);
+        assert_eq!(expected, x);
+    }
+
+    #[test]
+    fn try_from_f32_zero_preserves_sign() {
+        assert_eq!(
+            IbmFloat64::new(),
+            IbmFloat64::try_from(0.0_f32).unwrap()
+        );
+        let neg_zero = IbmFloat64::try_from(-0.0_f32).unwrap();
+        assert!(neg_zero.is_sign_negative());
+    }
+
+    #[test]
+    fn try_from_f32_nan_errors() {
+        assert_eq!(
+            Err(IbmFloatError::NotANumber),
+            IbmFloat64::try_from(f32::NAN)
+        );
+    }
+
+    #[test]
+    fn try_from_f32_infinity_errors() {
+        assert_eq!(
+            Err(IbmFloatError::PositiveInfinity),
+            IbmFloat64::try_from(f32::INFINITY)
+        );
+        assert_eq!(
+            Err(IbmFloatError::NegativeInfinity),
+            IbmFloat64::try_from(f32::NEG_INFINITY)
+        );
+    }
+
+    #[test]
+    fn try_from_f32_max_in_range() {
+        // f32::MAX (~3.4e38) is well inside IBM HFP's range (~7.2e75), so
+        // no overflow can fire from any finite f32.
+        let x = IbmFloat64::try_from(f32::MAX).unwrap();
+        assert!(x.is_sign_positive());
+    }
+
+    #[test]
+    fn try_from_f32_subnormal_in_range() {
+        // f32 subnormals (smallest ~1.4e-45) are still ~1e34 times larger
+        // than IBM HFP's smallest positive value (~5.4e-79), so they never
+        // trigger underflow.
+        let x = IbmFloat64::try_from(f32::MIN_POSITIVE).unwrap();
+        assert!(x.is_sign_positive());
+    }
+
+    #[test]
+    fn try_from_f32_matches_widened_f64() {
+        // Bridge invariant: TryFrom<f32> must be identical to widening to
+        // f64 first then converting (since f32 → f64 is exact).
+        let cases: &[f32] = &[
+            1.0,
+            -1.0,
+            2.0,
+            0.5,
+            0.1,
+            std::f32::consts::PI,
+            f32::MAX,
+            f32::MIN,
+            f32::MIN_POSITIVE,
+            1.0e-30,
+            -1.0e-30,
+        ];
+        for &x in cases {
+            let direct = IbmFloat64::try_from(x).unwrap();
+            let widened = IbmFloat64::try_from(f64::from(x)).unwrap();
+            assert_eq!(
+                widened, direct,
+                "TryFrom<f32>({x}) must equal TryFrom<f64>(f64::from({x}))"
+            );
+        }
     }
 
     #[test]

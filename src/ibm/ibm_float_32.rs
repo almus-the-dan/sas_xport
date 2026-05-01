@@ -15,10 +15,16 @@ use super::{IbmFloat64, IbmFloatError, ParseIbmFloatError};
 /// pattern, mirroring the conventions of [`IbmFloat64`]. Convert to `f64` for
 /// numeric comparison.
 ///
-/// Public conversions go IBM → IEEE only: `From<IbmFloat32> for f64` is
-/// bit-exact, and `FromStr` parses decimal strings via that same f64 path.
-/// There is intentionally no public `TryFrom<f64>` — see `src/ibm/README.md`
-/// for the rationale.
+/// Public conversions split by direction:
+/// - **Lossless out**: `From<IbmFloat32> for f64`, `From<IbmFloat32> for IbmFloat64`.
+/// - **Lossy in**: explicit `_lossy`-suffixed inherent methods —
+///   [`Self::try_from_f64_lossy`], [`Self::try_from_f32_lossy`], and
+///   [`Self::from_ibm_float_64_lossy`]. No `TryFrom`/`From` trait impls for
+///   these directions because the precision-truncation loss can't be
+///   surfaced through any error type; the suffix is the warning label.
+/// - **String**: `FromStr` parses decimal strings via the f64 path.
+///
+/// See `src/ibm/README.md` for crate-level conventions and rationale.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct IbmFloat32 {
     bytes: [u8; 4],
@@ -85,18 +91,49 @@ impl IbmFloat32 {
         self.bytes[0] & 0x80 != 0
     }
 
-    /// Strictly converts an `f64` to an `IbmFloat32` by delegating to
-    /// [`IbmFloat64::try_from`] and truncating to the top 4 bytes.
+    /// Narrows an [`IbmFloat64`] to an `IbmFloat32` by truncating the
+    /// bottom 32 bits of the 56-bit IBM HFP mantissa (dropping the
+    /// trailing 4 bytes). The conversion is infallible — both formats
+    /// share the same range — but discards up to 32 bits of mantissa
+    /// precision.
     ///
-    /// `pub(crate)` — see `src/ibm/README.md`. The strict semantics here are
-    /// incomplete (precision truncation from f64's 53-bit mantissa down to
-    /// IBM32's 24-bit mantissa is silent and cannot be surfaced through
-    /// [`IbmFloatError`]), so we don't expose this as a public
-    /// `TryFrom<f64>`. Used internally by `<IbmFloat32 as FromStr>::from_str`.
-    pub(crate) fn try_from_f64(value: f64) -> Result<Self, IbmFloatError> {
-        let ibm64 = IbmFloat64::try_from(value)?;
+    /// **The `_lossy` suffix is the warning label.** No `From`/`TryFrom`
+    /// trait impl is provided for this direction: trait conversions tend to
+    /// suggest "free" or "strict" semantics, and neither is true here. The
+    /// dual `From<IbmFloat32> for IbmFloat64` widening *is* a `From` impl
+    /// because that direction is lossless.
+    #[must_use]
+    pub fn from_ibm_float_64_lossy(ibm64: IbmFloat64) -> Self {
         let b = ibm64.to_be_bytes();
-        Ok(Self::from_be_bytes([b[0], b[1], b[2], b[3]]))
+        Self::from_be_bytes([b[0], b[1], b[2], b[3]])
+    }
+
+    /// Converts an `f64` to an `IbmFloat32` by delegating to
+    /// [`IbmFloat64::try_from`] and then narrowing via
+    /// [`Self::from_ibm_float_64_lossy`].
+    ///
+    /// Errors on NaN/±Infinity and on values outside the IBM HFP range, but
+    /// **the `_lossy` suffix flags a third lossy mode that the error type
+    /// can't surface**: precision truncation from f64's 53-bit mantissa
+    /// down to IBM32's 24-bit mantissa is silent. We don't expose this as
+    /// a public `TryFrom<f64>` because trait conversions suggest a strict
+    /// guarantee that doesn't fully hold here.
+    pub fn try_from_f64_lossy(value: f64) -> Result<Self, IbmFloatError> {
+        let value = IbmFloat64::try_from(value)?;
+        Ok(Self::from_ibm_float_64_lossy(value))
+    }
+
+    /// Converts an `f32` to an `IbmFloat32` via the lossless `f32 → f64`
+    /// widening cast, then delegates to [`Self::try_from_f64_lossy`].
+    ///
+    /// Errors only on NaN/±Infinity (every finite f32 fits inside IBM
+    /// HFP's range). **The `_lossy` suffix flags binary-to-hex alignment
+    /// loss**: even though both f32 and IBM32 carry 24 mantissa bits, the
+    /// alignment can silently truncate up to 3 bits when the IBM32
+    /// mantissa's leading hex digit is small ("wobbling precision"). No
+    /// `TryFrom<f32>` trait impl for the same reason as f64.
+    pub fn try_from_f32_lossy(value: f32) -> Result<Self, IbmFloatError> {
+        Self::try_from_f64_lossy(f64::from(value))
     }
 }
 
@@ -113,8 +150,22 @@ impl FromStr for IbmFloat32 {
     /// that's actually representable.
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let value = s.parse::<f64>()?;
-        let value = Self::try_from_f64(value)?;
+        let value = Self::try_from_f64_lossy(value)?;
         Ok(value)
+    }
+}
+
+impl From<IbmFloat32> for IbmFloat64 {
+    /// Losslessly widens an `IbmFloat32` to an `IbmFloat64`.
+    ///
+    /// Both formats share the same byte 0 (sign + 7-bit characteristic
+    /// biased by 64) and IBM HFP mantissas are byte-prefix compatible —
+    /// trailing zero bytes don't change the represented value. Widening is
+    /// therefore a four-byte zero-pad with no arithmetic.
+    #[inline]
+    fn from(value: IbmFloat32) -> Self {
+        let b = value.to_be_bytes();
+        Self::from_be_bytes([b[0], b[1], b[2], b[3], 0, 0, 0, 0])
     }
 }
 
@@ -406,75 +457,75 @@ mod tests {
     }
 
     #[test]
-    fn try_from_f64_one() {
-        let x = IbmFloat32::try_from_f64(1.0).unwrap();
+    fn try_from_f64_lossy_one() {
+        let x = IbmFloat32::try_from_f64_lossy(1.0).unwrap();
         assert_eq!([0x41, 0x10, 0, 0], x.to_be_bytes());
     }
 
     #[test]
-    fn try_from_f64_negative_one() {
-        let x = IbmFloat32::try_from_f64(-1.0).unwrap();
+    fn try_from_f64_lossy_negative_one() {
+        let x = IbmFloat32::try_from_f64_lossy(-1.0).unwrap();
         assert_eq!([0xC1, 0x10, 0, 0], x.to_be_bytes());
     }
 
     #[test]
-    fn try_from_f64_zero_preserves_sign() {
+    fn try_from_f64_lossy_zero_preserves_sign() {
         assert_eq!(
             [0u8; 4],
-            IbmFloat32::try_from_f64(0.0).unwrap().to_be_bytes()
+            IbmFloat32::try_from_f64_lossy(0.0).unwrap().to_be_bytes()
         );
         assert_eq!(
             [0x80, 0, 0, 0],
-            IbmFloat32::try_from_f64(-0.0).unwrap().to_be_bytes()
+            IbmFloat32::try_from_f64_lossy(-0.0).unwrap().to_be_bytes()
         );
     }
 
     #[test]
-    fn try_from_f64_nan_errors() {
+    fn try_from_f64_lossy_nan_errors() {
         assert_eq!(
             Err(IbmFloatError::NotANumber),
-            IbmFloat32::try_from_f64(f64::NAN)
+            IbmFloat32::try_from_f64_lossy(f64::NAN)
         );
     }
 
     #[test]
-    fn try_from_f64_infinity_errors() {
+    fn try_from_f64_lossy_infinity_errors() {
         assert_eq!(
             Err(IbmFloatError::PositiveInfinity),
-            IbmFloat32::try_from_f64(f64::INFINITY)
+            IbmFloat32::try_from_f64_lossy(f64::INFINITY)
         );
         assert_eq!(
             Err(IbmFloatError::NegativeInfinity),
-            IbmFloat32::try_from_f64(f64::NEG_INFINITY)
+            IbmFloat32::try_from_f64_lossy(f64::NEG_INFINITY)
         );
     }
 
     #[test]
-    fn try_from_f64_overflow_errors() {
+    fn try_from_f64_lossy_overflow_errors() {
         assert_eq!(
             Err(IbmFloatError::PositiveOverflow),
-            IbmFloat32::try_from_f64(1.0e300)
+            IbmFloat32::try_from_f64_lossy(1.0e300)
         );
         assert_eq!(
             Err(IbmFloatError::NegativeOverflow),
-            IbmFloat32::try_from_f64(-1.0e300)
+            IbmFloat32::try_from_f64_lossy(-1.0e300)
         );
     }
 
     #[test]
-    fn try_from_f64_underflow_errors() {
+    fn try_from_f64_lossy_underflow_errors() {
         assert_eq!(
             Err(IbmFloatError::PositiveUnderflow),
-            IbmFloat32::try_from_f64(1.0e-310)
+            IbmFloat32::try_from_f64_lossy(1.0e-310)
         );
         assert_eq!(
             Err(IbmFloatError::NegativeUnderflow),
-            IbmFloat32::try_from_f64(-1.0e-310)
+            IbmFloat32::try_from_f64_lossy(-1.0e-310)
         );
     }
 
     #[test]
-    fn try_from_f64_matches_ibm_float_64_truncated() {
+    fn try_from_f64_lossy_matches_ibm_float_64_truncated() {
         // For any in-range f64, the IBM32 result must equal the top 4 bytes
         // of the IBM64 result. This is the input-direction analogue of
         // `matches_ibm_float_64_for_padded_bytes`.
@@ -497,13 +548,185 @@ mod tests {
             -1.0e-30,
         ];
         for &f in cases {
-            let ibm32 = IbmFloat32::try_from_f64(f).unwrap();
+            let ibm32 = IbmFloat32::try_from_f64_lossy(f).unwrap();
             let ibm64 = IbmFloat64::try_from(f).unwrap();
             let b64 = ibm64.to_be_bytes();
             assert_eq!(
                 [b64[0], b64[1], b64[2], b64[3]],
                 ibm32.to_be_bytes(),
                 "IBM32(f={f}) bytes should equal top-4 of IBM64(f={f}) bytes"
+            );
+        }
+    }
+
+    #[test]
+    fn from_ibm_float_64_lossy_truncates_top_four_bytes() {
+        let ibm64 = IbmFloat64::from_be_bytes([0x42, 0x76, 0xA0, 0x12, 0x34, 0x56, 0x78, 0x9A]);
+        let ibm32 = IbmFloat32::from_ibm_float_64_lossy(ibm64);
+        assert_eq!([0x42, 0x76, 0xA0, 0x12], ibm32.to_be_bytes());
+    }
+
+    #[test]
+    fn from_ibm_float_64_lossy_preserves_signed_zero() {
+        let pos = IbmFloat32::from_ibm_float_64_lossy(IbmFloat64::from_be_bytes([0; 8]));
+        assert_eq!([0u8; 4], pos.to_be_bytes());
+        let neg = IbmFloat32::from_ibm_float_64_lossy(IbmFloat64::from_be_bytes([
+            0x80, 0, 0, 0, 0, 0, 0, 0,
+        ]));
+        assert_eq!([0x80, 0, 0, 0], neg.to_be_bytes());
+    }
+
+    #[test]
+    fn widen_then_narrow_is_identity() {
+        // For any IbmFloat32, widening to IbmFloat64 and narrowing back
+        // must reproduce the original bytes — the widening only adds zero
+        // bytes that the narrowing then discards.
+        let cases: &[[u8; 4]] = &[
+            [0x41, 0x10, 0, 0],
+            [0xC1, 0x10, 0, 0],
+            [0x42, 0x76, 0xA0, 0x00],
+            [0x41, 0x32, 0x43, 0xF6],
+            [0x7F, 0xFF, 0xFF, 0xFF],
+            [0xFF, 0xFF, 0xFF, 0xFF],
+            [0x00, 0x00, 0x00, 0x01],
+            [0x80, 0x00, 0x00, 0x00],
+        ];
+        for &bytes in cases {
+            let original = IbmFloat32::from_be_bytes(bytes);
+            let widened: IbmFloat64 = original.into();
+            let narrowed = IbmFloat32::from_ibm_float_64_lossy(widened);
+            assert_eq!(original.to_be_bytes(), narrowed.to_be_bytes());
+        }
+    }
+
+    #[test]
+    fn widening_to_ibm_float_64_zero_pads_mantissa() {
+        let x = IbmFloat32::from_be_bytes([0x42, 0x76, 0xA0, 0x00]);
+        let widened: IbmFloat64 = x.into();
+        assert_eq!(
+            [0x42, 0x76, 0xA0, 0x00, 0x00, 0x00, 0x00, 0x00],
+            widened.to_be_bytes()
+        );
+    }
+
+    #[test]
+    fn widening_preserves_signed_zero() {
+        let pos: IbmFloat64 = IbmFloat32::from_be_bytes([0; 4]).into();
+        assert_eq!([0u8; 8], pos.to_be_bytes());
+        let neg: IbmFloat64 = IbmFloat32::from_be_bytes([0x80, 0, 0, 0]).into();
+        assert_eq!([0x80, 0, 0, 0, 0, 0, 0, 0], neg.to_be_bytes());
+    }
+
+    #[test]
+    fn widening_preserves_max_value() {
+        let widened: IbmFloat64 = IbmFloat32::MAX_VALUE.into();
+        // IBM32 MAX_VALUE bytes [0x7F, 0xFF, 0xFF, 0xFF] become IBM64 with
+        // trailing zeros — strictly less than IBM64::MAX_VALUE (which has
+        // trailing 0xFF bytes), but with the same numeric magnitude up to
+        // IBM32's 24-bit mantissa precision.
+        assert_eq!(
+            [0x7F, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00],
+            widened.to_be_bytes()
+        );
+    }
+
+    #[test]
+    fn widening_then_to_f64_equals_direct() {
+        // Cross-check: f64::from(IbmFloat64::from(ibm32)) must equal
+        // f64::from(ibm32) — the widening shouldn't change the numeric
+        // value. This complements `matches_ibm_float_64_for_padded_bytes`
+        // by going through the new From impl rather than manual padding.
+        let cases: &[[u8; 4]] = &[
+            [0x41, 0x10, 0, 0],       // 1.0
+            [0xC1, 0x10, 0, 0],       // -1.0
+            [0x42, 0x76, 0xA0, 0x00], // 118.625
+            [0x41, 0x32, 0x43, 0xF6], // ≈ π
+            [0x7F, 0xFF, 0xFF, 0xFF], // MAX_VALUE
+            [0xFF, 0xFF, 0xFF, 0xFF], // MIN_VALUE
+            [0x00, 0x00, 0x00, 0x01], // smallest denormal positive
+            [0x80, 0x00, 0x00, 0x00], // -0
+        ];
+        for &bytes in cases {
+            let ibm32 = IbmFloat32::from_be_bytes(bytes);
+            let direct = f64::from(ibm32);
+            let via_widening = f64::from(IbmFloat64::from(ibm32));
+            assert_eq!(
+                direct.to_bits(),
+                via_widening.to_bits(),
+                "widening of {bytes:02X?} should not change numeric value"
+            );
+        }
+    }
+
+    #[test]
+    fn try_from_f32_lossy_one() {
+        let x = IbmFloat32::try_from_f32_lossy(1.0_f32).unwrap();
+        assert_eq!([0x41, 0x10, 0, 0], x.to_be_bytes());
+    }
+
+    #[test]
+    fn try_from_f32_lossy_negative_one() {
+        let x = IbmFloat32::try_from_f32_lossy(-1.0_f32).unwrap();
+        assert_eq!([0xC1, 0x10, 0, 0], x.to_be_bytes());
+    }
+
+    #[test]
+    fn try_from_f32_lossy_zero_preserves_sign() {
+        assert_eq!(
+            [0u8; 4],
+            IbmFloat32::try_from_f32_lossy(0.0_f32).unwrap().to_be_bytes()
+        );
+        assert_eq!(
+            [0x80, 0, 0, 0],
+            IbmFloat32::try_from_f32_lossy(-0.0_f32).unwrap().to_be_bytes()
+        );
+    }
+
+    #[test]
+    fn try_from_f32_lossy_nan_errors() {
+        assert_eq!(
+            Err(IbmFloatError::NotANumber),
+            IbmFloat32::try_from_f32_lossy(f32::NAN)
+        );
+    }
+
+    #[test]
+    fn try_from_f32_lossy_infinity_errors() {
+        assert_eq!(
+            Err(IbmFloatError::PositiveInfinity),
+            IbmFloat32::try_from_f32_lossy(f32::INFINITY)
+        );
+        assert_eq!(
+            Err(IbmFloatError::NegativeInfinity),
+            IbmFloat32::try_from_f32_lossy(f32::NEG_INFINITY)
+        );
+    }
+
+    #[test]
+    fn try_from_f32_lossy_matches_try_from_f64_lossy_bridge() {
+        // Bridge invariant: try_from_f32_lossy(x) must equal try_from_f64_lossy(f64::from(x))
+        // since f32 → f64 is exact.
+        let cases: &[f32] = &[
+            1.0,
+            -1.0,
+            2.0,
+            0.5,
+            0.1,
+            std::f32::consts::PI,
+            118.625,
+            f32::MAX,
+            f32::MIN,
+            f32::MIN_POSITIVE,
+            1.0e-30,
+            -1.0e-30,
+        ];
+        for &x in cases {
+            let direct = IbmFloat32::try_from_f32_lossy(x).unwrap();
+            let widened = IbmFloat32::try_from_f64_lossy(f64::from(x)).unwrap();
+            assert_eq!(
+                widened.to_be_bytes(),
+                direct.to_be_bytes(),
+                "try_from_f32_lossy({x}) must equal try_from_f64_lossy(f64::from({x}))"
             );
         }
     }

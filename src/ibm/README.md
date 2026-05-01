@@ -8,30 +8,36 @@ differ only in mantissa width (24 vs 56 bits).
 
 ## 32-bit support
 
-`IbmFloat32` exposes the read direction (`From<IbmFloat32> for f64`, bit-exact
-because the 24-bit IBM mantissa fits inside f64's 53-bit significand with 29
-bits to spare and `16^k` is exact in f64 across the IBM HFP exponent range)
-plus a public `FromStr` for parsing decimal strings.
+`IbmFloat32`'s public conversion surface is split deliberately by
+losslessness:
 
-`FromStr` parses through `f64` rather than `f32` to preserve IBM32's full
-numeric range — strings like `"1e50"` are well within IBM32's range
-(~5.4e-79 to ~7.2e75) but would saturate to infinity going through f32
-(~3.4e38), causing a misleading `Infinite` error for values that are actually
-representable.
+**Lossless (trait impls)**
+- `From<IbmFloat32> for f64` — bit-exact (IBM32's 24-bit mantissa fits f64's
+  53-bit significand with margin; `16^k` is exact in f64 across the range).
+- `From<IbmFloat32> for IbmFloat64` — byte zero-pad of the mantissa, no
+  arithmetic.
+- `FromStr` — parses decimal strings through f64 (not f32, to preserve the
+  full IBM32 range; `"1e50"` is representable in IBM32 but would saturate to
+  infinity going through f32).
 
-There is intentionally **no public `TryFrom<f64>` for `IbmFloat32`**. The
-conversion has three lossy modes — range overflow, range underflow, and
-precision truncation (53-bit f64 mantissa → 24-bit IBM32 mantissa) — but a
-`TryFrom` error type can only surface the first two; precision truncation is
-silent. A "strict" `TryFrom` would therefore deliver an incomplete strictness
-guarantee, mirroring `std`'s deliberate absence of `TryFrom<f64> for f32` for
-the same reason. The conversion still exists internally as `pub(crate)
-IbmFloat32::try_from_f64`, used by the `FromStr` impl. `FromStr`'s
-`ParseIbmFloatError` carries an `IbmFloatError` that *also* doesn't
-surface precision truncation, but that's expected: a string parser is best
-understood as "parse to nearest representable value," not as a strict
-1-to-1 mapping. Add a public `TryFrom<f64>` later when a use case justifies
-the incomplete-strictness tradeoff.
+**Lossy (named methods, no trait)**
+- `IbmFloat32::try_from_f64_lossy(value: f64) -> Result<Self, IbmFloatError>`
+- `IbmFloat32::try_from_f32_lossy(value: f32) -> Result<Self, IbmFloatError>`
+- `IbmFloat32::from_ibm_float_64_lossy(ibm64: IbmFloat64) -> Self`
+
+These exist as inherent methods rather than `From`/`TryFrom` trait impls
+because the precision-truncation loss they incur is silent — no error
+variant could surface it. Trait conversions tend to suggest "free" or
+"strictly captured" semantics; neither holds here. The `_lossy` suffix is
+the warning label, in the spirit of `String::from_utf8_lossy` and
+`Path::to_string_lossy`. Std follows the same instinct for floats:
+`From<f32> for f64` exists (lossless widening), but no `From<f64> for f32`
+or `TryFrom<f64> for f32` (silent precision loss in the narrow direction).
+
+`FromStr`'s `ParseIbmFloatError` likewise can't surface precision
+truncation — but that's expected for a string parser ("parse to nearest
+representable value" is the contract), so no `_lossy` suffix is warranted
+on `FromStr` itself.
 
 ## IBM → IEEE conversion: truncation, by design
 
