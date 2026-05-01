@@ -1,7 +1,23 @@
-use std::fmt::{self, Display, Formatter};
+use std::error::Error;
+use std::fmt::{self, Display, Formatter, LowerExp, UpperExp};
+use std::num::ParseFloatError;
+use std::str::FromStr;
 
-/// Represents a 64-bit IBM floating point value.
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord)]
+/// Represents a 64-bit IBM hexadecimal floating point value.
+///
+/// Equality, ordering, and hashing are over the underlying `[u8; 8]` bit pattern,
+/// not the numeric value the bytes represent. Multiple byte patterns can encode
+/// the same numeric value (notably any byte with a zero mantissa is numerically
+/// zero); this type treats them as distinct. Convert to `f64` for numeric
+/// comparison.
+///
+/// `Ord`/`PartialOrd` derive lexicographic byte order, which is *not* numeric
+/// order: negative values sort after positive values because the sign bit is set.
+/// Convert to `f64` for numeric comparison.
+///
+/// See `src/ibm/README.md` for the IBM-to-IEEE rounding-mode rationale and other
+/// crate-level conventions.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct IbmFloat64 {
     bytes: [u8; 8],
 }
@@ -223,6 +239,76 @@ impl Display for IbmFloat64 {
     #[inline]
     fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
         Display::fmt(&f64::from(*self), formatter)
+    }
+}
+
+impl LowerExp for IbmFloat64 {
+    /// Formats the `IbmFloat64` in lowercase scientific notation by converting it
+    /// to an `f64` and forwarding to `f64`'s `LowerExp` impl.
+    #[inline]
+    fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
+        LowerExp::fmt(&f64::from(*self), formatter)
+    }
+}
+
+impl UpperExp for IbmFloat64 {
+    /// Formats the `IbmFloat64` in uppercase scientific notation by converting it
+    /// to an `f64` and forwarding to `f64`'s `UpperExp` impl.
+    #[inline]
+    fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
+        UpperExp::fmt(&f64::from(*self), formatter)
+    }
+}
+
+/// Error returned when parsing an `IbmFloat64` from a string fails.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ParseIbmFloat64Error {
+    /// The input could not be parsed as an `f64`.
+    InvalidFloat(ParseFloatError),
+    /// The input parsed as `f64` but was NaN, which has no IBM HFP encoding.
+    NotANumber,
+}
+
+impl Display for ParseIbmFloat64Error {
+    fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::InvalidFloat(e) => Display::fmt(e, formatter),
+            Self::NotANumber => {
+                formatter.write_str("input parsed as NaN, which has no IBM HFP encoding")
+            }
+        }
+    }
+}
+
+impl Error for ParseIbmFloat64Error {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match self {
+            Self::InvalidFloat(e) => Some(e),
+            Self::NotANumber => None,
+        }
+    }
+}
+
+impl From<ParseFloatError> for ParseIbmFloat64Error {
+    fn from(value: ParseFloatError) -> Self {
+        Self::InvalidFloat(value)
+    }
+}
+
+impl FromStr for IbmFloat64 {
+    type Err = ParseIbmFloat64Error;
+
+    /// Parses an `IbmFloat64` by first parsing the input as an `f64` and then
+    /// converting via `TryFrom<f64>`.
+    ///
+    /// - NaN inputs (e.g. `"nan"`) return [`ParseIbmFloat64Error::NotANumber`].
+    /// - Infinite inputs (e.g. `"inf"`, `"-inf"`) saturate to `MAX_VALUE`/`MIN_VALUE`,
+    ///   matching the behavior of `TryFrom<f64>`.
+    /// - Magnitudes outside the IBM HFP range underflow to signed zero or
+    ///   saturate to `MAX_VALUE`/`MIN_VALUE`, matching `TryFrom<f64>`.
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let value = s.parse::<f64>()?;
+        Self::try_from(value).map_err(|()| ParseIbmFloat64Error::NotANumber)
     }
 }
 
@@ -550,6 +636,99 @@ mod tests {
     }
 
     #[test]
+    fn hash_is_consistent_with_eq() {
+        use std::collections::HashSet;
+
+        let bytes = [0x41, 0x10, 0, 0, 0, 0, 0, 0];
+        let a = IbmFloat64::from_be_bytes(bytes);
+        let b = IbmFloat64::from_be_bytes(bytes);
+
+        let mut set = HashSet::new();
+        set.insert(a);
+        assert!(set.contains(&b));
+    }
+
+    #[test]
+    fn hash_distinguishes_signed_zeros() {
+        use std::collections::HashSet;
+
+        let plus_zero = IbmFloat64::from_be_bytes([0; 8]);
+        let minus_zero = IbmFloat64::from_be_bytes([0x80, 0, 0, 0, 0, 0, 0, 0]);
+
+        // Bit-exact equality: +0 and -0 are different bit patterns.
+        assert_ne!(plus_zero, minus_zero);
+
+        let mut set = HashSet::new();
+        set.insert(plus_zero);
+        set.insert(minus_zero);
+        assert_eq!(set.len(), 2);
+    }
+
+    #[test]
+    fn lower_exp_formats_via_f64() {
+        let ibm = IbmFloat64::try_from(118.625).unwrap();
+        assert_eq!(format!("{ibm:e}"), format!("{:e}", f64::from(ibm)));
+        assert_eq!(format!("{ibm:.3e}"), format!("{:.3e}", f64::from(ibm)));
+    }
+
+    #[test]
+    fn upper_exp_formats_via_f64() {
+        let ibm = IbmFloat64::try_from(118.625).unwrap();
+        assert_eq!(format!("{ibm:E}"), format!("{:E}", f64::from(ibm)));
+        assert_eq!(format!("{ibm:.3E}"), format!("{:.3E}", f64::from(ibm)));
+    }
+
+    #[test]
+    fn from_str_parses_one() {
+        let parsed: IbmFloat64 = "1.0".parse().unwrap();
+        let expected = IbmFloat64::from_be_bytes([0x41, 0x10, 0, 0, 0, 0, 0, 0]);
+        assert_eq!(parsed, expected);
+    }
+
+    #[test]
+    fn from_str_parses_negative_one() {
+        let parsed: IbmFloat64 = "-1.0".parse().unwrap();
+        let expected = IbmFloat64::from_be_bytes([0xC1, 0x10, 0, 0, 0, 0, 0, 0]);
+        assert_eq!(parsed, expected);
+    }
+
+    #[test]
+    fn from_str_parses_zero() {
+        let parsed: IbmFloat64 = "0".parse().unwrap();
+        assert_eq!(parsed, IbmFloat64::new());
+    }
+
+    #[test]
+    fn from_str_parses_scientific_notation() {
+        let parsed: IbmFloat64 = "1.18625e2".parse().unwrap();
+        assert_approx_eq!(f64, 118.625, f64::from(parsed));
+    }
+
+    #[test]
+    fn from_str_rejects_nan() {
+        let result: Result<IbmFloat64, _> = "nan".parse();
+        assert!(matches!(result, Err(ParseIbmFloat64Error::NotANumber)));
+    }
+
+    #[test]
+    fn from_str_rejects_garbage() {
+        let result: Result<IbmFloat64, _> = "abc".parse();
+        assert!(matches!(
+            result,
+            Err(ParseIbmFloat64Error::InvalidFloat(_))
+        ));
+    }
+
+    #[test]
+    fn from_str_infinity_saturates() {
+        let positive: IbmFloat64 = "inf".parse().unwrap();
+        assert_eq!(IbmFloat64::MAX_VALUE, positive);
+
+        let negative: IbmFloat64 = "-inf".parse().unwrap();
+        assert_eq!(IbmFloat64::MIN_VALUE, negative);
+    }
+
+    #[test]
     #[ignore = "Prints constant values for verification"]
     fn verify_constants() {
         println!("\n=== IbmFloat64 Constants ===");
@@ -634,6 +813,8 @@ mod tests {
     #[test]
     #[ignore = "Bit-exact agreement check against the ibmfloat crate (run with --nocapture)"]
     fn agreement_with_ibmfloat() {
+        const RANDOM_N: usize = 5_000_000;
+
         use ibmfloat::F64;
 
         fn check(bytes: [u8; 8]) -> Option<(u64, u64)> {
@@ -694,7 +875,6 @@ mod tests {
         report("curated", curated.len(), &curated_disagreements);
 
         // ----- Random set: splitmix64 over the full [u8; 8] space.
-        const RANDOM_N: usize = 5_000_000;
         let mut state: u64 = 0xCAFE_F00D_BAAD_F00D;
         let mut random_disagreements: Vec<([u8; 8], u64, u64)> = Vec::new();
         for _ in 0..RANDOM_N {
