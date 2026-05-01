@@ -5,6 +5,43 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2026-05-01
+
+### Changed
+
+- **Breaking (behavior):** `SasFloat64::try_from(f64)` underflow handling changed for negative finite inputs. Tiny negative values (smaller in magnitude than the smallest representable IBM HFP value) previously round-tripped through `From<SasFloat64> for f64` as NaN — the saturating converter wrote the IBM HFP `-0` byte pattern (`[0x80, 0, 0, 0, 0, 0, 0, 0]`), which collides with the SAS missing-value sentinel encoding. They now round-trip as `+0.0`. Fix to a latent bug; users relying on the NaN behavior will see a difference.
+- **Internal:** IBM hexadecimal floating point types (`IbmFloat32`, `IbmFloat64`, `IbmFloatError`, `ParseIbmFloatError`) extracted to a dedicated [`ibm_hfp` crate](https://crates.io/crates/ibm_hfp) (added as a dependency). Public trait impls on `SasFloat64` that reference `IbmFloat64` now resolve to `ibm_hfp::IbmFloat64`; downstream code that wants to construct or match on these types should add `ibm_hfp` as a direct dependency. Most existing users will not notice — `IbmFloat64` was unreachable through `sas_xport`'s public API in 0.3.0.
+
+### Fixed
+
+- `tests/async_xport_reader_test.rs` now correctly gates on `feature = "tokio"`. `cargo test` (default features) previously failed to compile this test file; only `cargo test --features tokio` worked. Both modes now build and pass.
+
+## [0.3.0] - 2026-04-18
+
+### Changed
+
+- **Breaking:** `XportWriter::finish` and `AsyncXportWriter::finish` (on the schema-stage writers) now return `Result<W>` instead of `Result<()>` — the inner writer/sink is returned to the caller, so the underlying `File` (or other `Write`/`AsyncWrite` impl) can be reused after the XPORT trailer is committed.
+
+### Removed
+
+- **Breaking:** The `Drop` impl on writer types is gone. Trailing-record commitment used to happen implicitly when the writer was dropped, which silently swallowed write errors. Callers must now explicitly call `finish()` to commit the trailer (and observe any I/O error).
+
+### Migration guide
+
+```rust
+// 0.2
+let mut writer = XportWriter::from_file(file, metadata)?
+    .write_schema(schema)?;
+writer.write_record(&record)?;
+// (Drop committed the trailer — silently)
+
+// 0.3
+let mut writer = XportWriter::from_file(file, metadata)?
+    .write_schema(schema)?;
+writer.write_record(&record)?;
+let file = writer.finish()?; // explicit commit, returns the inner File
+```
+
 ## [0.2.0] - 2026-04-16
 
 ### Added
