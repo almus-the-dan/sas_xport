@@ -1,7 +1,36 @@
-use crate::ibm::IbmFloat64;
+use crate::ibm::{IbmFloat64, IbmFloat64Error};
 use std::fmt::{self, Display, Formatter};
 
 use super::sas_missing_value::SasMissingValue;
+
+/// Saturating IBM HFP conversion for SAS-side use.
+///
+/// `IbmFloat64::try_from(f64)` is strict: it errors on infinity, overflow, and
+/// underflow. SAS XPORT writers want clamping at the IBM range boundary
+/// instead, so this helper maps those errors to `MAX_VALUE` / `MIN_VALUE` /
+/// signed zero. Only NaN propagates as an error (the `SasFloat64` caller
+/// pre-filters NaN via `is_finite()`, so the helper never actually returns
+/// `Err` from inside `SasFloat64::try_from` — but we keep the fallible
+/// signature so the helper is reusable by future callers without surprise).
+fn ieee_to_ibm_saturating(value: f64) -> Result<IbmFloat64, IbmFloat64Error> {
+    use IbmFloat64Error::{
+        NegativeInfinity, NegativeOverflow, NegativeUnderflow, NotANumber, PositiveInfinity,
+        PositiveOverflow, PositiveUnderflow,
+    };
+    // Note on the underflow case: both signs collapse to +0. The IBM byte
+    // pattern for -0 is [0x80, 0, 0, 0, 0, 0, 0, 0], which collides with the
+    // SAS missing-value sentinel encoding (any non-zero byte 0 with bytes
+    // 1..=7 all zero is read as a missing value / NaN by `From<SasFloat64>
+    // for f64`). Saturating negative underflow to -0 IBM would therefore
+    // round-trip as NaN instead of zero — so we drop the sign instead.
+    match IbmFloat64::try_from(value) {
+        Ok(ibm) => Ok(ibm),
+        Err(NotANumber) => Err(NotANumber),
+        Err(PositiveInfinity | PositiveOverflow) => Ok(IbmFloat64::MAX_VALUE),
+        Err(NegativeInfinity | NegativeOverflow) => Ok(IbmFloat64::MIN_VALUE),
+        Err(PositiveUnderflow | NegativeUnderflow) => Ok(IbmFloat64::new()),
+    }
+}
 
 /// Represents a 64-bit SAS floating point value.
 ///
@@ -160,9 +189,13 @@ impl TryFrom<f64> for SasFloat64 {
     #[inline]
     fn try_from(value: f64) -> Result<Self, Self::Error> {
         // Fast path: normal finite numbers (the overwhelming majority of calls).
-        // IbmFloat64::try_from handles zero, underflow, and overflow internally.
+        // `IbmFloat64::try_from` is strict; the saturating helper clamps
+        // overflow/underflow/infinity at the IBM range boundary. Finite inputs
+        // can never produce NaN errors, so the `.map_err` is dead in practice.
         if value.is_finite() {
-            return IbmFloat64::try_from(value).map(Self::from);
+            return ieee_to_ibm_saturating(value)
+                .map(Self::from)
+                .map_err(|_| ());
         }
         // Slow path: infinite or NaN.
         if value.is_infinite() {
@@ -437,5 +470,38 @@ mod tests {
         let x = SasFloat64::try_from(f64::INFINITY).unwrap();
         assert!(!x.is_finite());
         assert!(x.is_infinite());
+    }
+
+    #[test]
+    fn from_overflow_positive_saturates_to_max() {
+        let huge = 1.0e300;
+        let x = SasFloat64::try_from(huge).unwrap();
+        assert_eq!(SasFloat64::MAX_VALUE.to_be_bytes(), x.to_be_bytes());
+    }
+
+    #[test]
+    fn from_overflow_negative_saturates_to_min() {
+        let huge = -1.0e300;
+        let x = SasFloat64::try_from(huge).unwrap();
+        assert_eq!(SasFloat64::MIN_VALUE.to_be_bytes(), x.to_be_bytes());
+    }
+
+    #[test]
+    fn from_underflow_positive_saturates_to_zero() {
+        let tiny = 1.0e-310;
+        let x = SasFloat64::try_from(tiny).unwrap();
+        let f = f64::from(x);
+        assert_eq!(0.0_f64.to_bits(), f.to_bits());
+    }
+
+    #[test]
+    fn from_underflow_negative_saturates_to_zero() {
+        // Negative underflow drops sign because [0x80, 0, ...] would be
+        // re-read as a SAS missing value rather than -0. See the comment on
+        // `ieee_to_ibm_saturating`.
+        let tiny = -1.0e-310;
+        let x = SasFloat64::try_from(tiny).unwrap();
+        let f = f64::from(x);
+        assert_eq!(0.0_f64.to_bits(), f.to_bits());
     }
 }

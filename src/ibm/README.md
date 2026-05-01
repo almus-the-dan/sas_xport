@@ -27,6 +27,21 @@ If your use case is purely numerical (no XPORT round-trip, minimum mean error
 matters more than ecosystem agreement), willglynn's `ibmfloat` may suit you
 better.
 
+## IEEE → IBM conversion: strict, with typed errors
+
+`<IbmFloat64 as TryFrom<f64>>::try_from` is **strict**. Anything that cannot be
+faithfully represented returns `IbmFloat64Error` with a specific variant
+(`NotANumber`, `PositiveInfinity` / `NegativeInfinity`, `PositiveOverflow` /
+`NegativeOverflow`, `PositiveUnderflow` / `NegativeUnderflow`). The crate
+deliberately does not implement saturating semantics on the trait — callers
+that want clamping at the IBM range boundary should match on the error variant
+and substitute `MAX_VALUE`, `MIN_VALUE`, or signed zero as appropriate. This
+keeps the lossy-conversion decision visible at the call site.
+
+`FromStr` returns `ParseIbmFloat64Error`, which composes a `ParseFloatError`
+(parse failure) and `IbmFloat64Error` (out-of-range f64) so both failure modes
+are surfaced through a single `?` chain.
+
 ## Equality, ordering, and hashing
 
 `PartialEq`, `Eq`, and `Hash` are bit-exact over the underlying `[u8; 8]`. IBM

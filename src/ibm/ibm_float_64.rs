@@ -1,7 +1,7 @@
-use std::error::Error;
 use std::fmt::{self, Display, Formatter, LowerExp, UpperExp};
-use std::num::ParseFloatError;
 use std::str::FromStr;
+
+use super::{IbmFloat64Error, ParseIbmFloat64Error};
 
 /// Represents a 64-bit IBM hexadecimal floating point value.
 ///
@@ -98,26 +98,41 @@ impl IbmFloat64 {
 }
 
 impl TryFrom<f64> for IbmFloat64 {
-    type Error = ();
+    type Error = IbmFloat64Error;
 
-    /// Converts an `f64` to an `IbmFloat64`.
+    /// Strictly converts an `f64` to an `IbmFloat64`.
     ///
-    /// - If the magnitude is too small to represent (underflow), zero is returned
-    ///   (with the original sign preserved).
-    /// - If the magnitude is too large to represent (overflow), the maximum or
-    ///   minimum representable value is returned based on sign.
-    /// - If the value is NaN, an error is returned.
-    /// - If the value is infinite, the maximum or minimum representable value
-    ///   is returned based on sign.
+    /// Any input that cannot be faithfully represented returns an error
+    /// describing the failure mode. Callers that want saturating semantics
+    /// should match on the error variants and substitute `MAX_VALUE`,
+    /// `MIN_VALUE`, or signed zero as appropriate.
+    ///
+    /// - NaN → [`IbmFloat64Error::NotANumber`].
+    /// - ±Infinity → [`IbmFloat64Error::PositiveInfinity`] / [`IbmFloat64Error::NegativeInfinity`].
+    /// - Magnitude exceeds `MAX_VALUE` / falls below `MIN_VALUE` → the
+    ///   corresponding `Overflow` variant.
+    /// - Nonzero magnitude smaller than the smallest representable IBM value
+    ///   → the corresponding `Underflow` variant.
+    /// - `+0.0` and `-0.0` succeed and preserve sign.
     fn try_from(value: f64) -> Result<Self, Self::Error> {
         if value.is_nan() {
-            return Err(());
+            return Err(IbmFloat64Error::NotANumber);
         }
         if value.is_infinite() {
-            return Ok(if value.is_sign_positive() {
-                Self::MAX_VALUE
+            return Err(if value.is_sign_positive() {
+                IbmFloat64Error::PositiveInfinity
             } else {
-                Self::MIN_VALUE
+                IbmFloat64Error::NegativeInfinity
+            });
+        }
+
+        // Both signed zeros are representable IBM HFP values; handle them
+        // before the bit extraction so the underflow path doesn't see them.
+        if value == 0.0 {
+            return Ok(if value.is_sign_negative() {
+                Self::from_be_bytes([0x80, 0, 0, 0, 0, 0, 0, 0])
+            } else {
+                Self::new()
             });
         }
 
@@ -126,34 +141,29 @@ impl TryFrom<f64> for IbmFloat64 {
         #[allow(clippy::cast_possible_truncation)]
         let ieee2 = ieee8 as u32;
 
-        // Check for negative by extracting sign bit
         let is_negative = (ieee1 & 0x8000_0000u32) != 0;
-
-        // For zero, return early
-        if ieee1 == 0 && ieee2 == 0 {
-            return Ok(Self::new());
-        }
 
         // Extract and check exponent bounds before computing potentially-wrapping values
         #[allow(clippy::cast_possible_wrap)]
         let high = ieee1 as i32 >> 16;
         let exponent = ((high & 0x7FF0) >> 4) - 1023;
 
-        // Underflow: magnitude too small, return signed zero
         if exponent < -260 {
-            return Ok(if is_negative {
-                Self::from_be_bytes([0x80, 0, 0, 0, 0, 0, 0, 0])
+            return Err(if is_negative {
+                IbmFloat64Error::NegativeUnderflow
             } else {
-                Self::new()
+                IbmFloat64Error::PositiveUnderflow
             });
         }
 
-        // Overflow: magnitude too large, saturate to max/min based on sign
-        if exponent > 248 {
-            return Ok(if is_negative {
-                Self::MIN_VALUE
+        // Overflow: largest representable IBM characteristic is 127, which
+        // corresponds to IEEE exponent 251 = (127 - 65) << 2 + 3. Anything
+        // strictly above 251 cannot fit in 7 bits of IBM characteristic.
+        if exponent > 251 {
+            return Err(if is_negative {
+                IbmFloat64Error::NegativeOverflow
             } else {
-                Self::MAX_VALUE
+                IbmFloat64Error::PositiveOverflow
             });
         }
 
@@ -260,55 +270,16 @@ impl UpperExp for IbmFloat64 {
     }
 }
 
-/// Error returned when parsing an `IbmFloat64` from a string fails.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ParseIbmFloat64Error {
-    /// The input could not be parsed as an `f64`.
-    InvalidFloat(ParseFloatError),
-    /// The input parsed as `f64` but was NaN, which has no IBM HFP encoding.
-    NotANumber,
-}
-
-impl Display for ParseIbmFloat64Error {
-    fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::InvalidFloat(e) => Display::fmt(e, formatter),
-            Self::NotANumber => {
-                formatter.write_str("input parsed as NaN, which has no IBM HFP encoding")
-            }
-        }
-    }
-}
-
-impl Error for ParseIbmFloat64Error {
-    fn source(&self) -> Option<&(dyn Error + 'static)> {
-        match self {
-            Self::InvalidFloat(e) => Some(e),
-            Self::NotANumber => None,
-        }
-    }
-}
-
-impl From<ParseFloatError> for ParseIbmFloat64Error {
-    fn from(value: ParseFloatError) -> Self {
-        Self::InvalidFloat(value)
-    }
-}
-
 impl FromStr for IbmFloat64 {
     type Err = ParseIbmFloat64Error;
 
     /// Parses an `IbmFloat64` by first parsing the input as an `f64` and then
-    /// converting via `TryFrom<f64>`.
-    ///
-    /// - NaN inputs (e.g. `"nan"`) return [`ParseIbmFloat64Error::NotANumber`].
-    /// - Infinite inputs (e.g. `"inf"`, `"-inf"`) saturate to `MAX_VALUE`/`MIN_VALUE`,
-    ///   matching the behavior of `TryFrom<f64>`.
-    /// - Magnitudes outside the IBM HFP range underflow to signed zero or
-    ///   saturate to `MAX_VALUE`/`MIN_VALUE`, matching `TryFrom<f64>`.
+    /// converting via `TryFrom<f64>`. Failures from either step are surfaced
+    /// via the corresponding [`ParseIbmFloat64Error`] variant.
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let value = s.parse::<f64>()?;
-        Self::try_from(value).map_err(|()| ParseIbmFloat64Error::NotANumber)
+        let value = Self::try_from(value)?;
+        Ok(value)
     }
 }
 
@@ -403,8 +374,12 @@ mod tests {
 
         assert!(x.is_sign_positive());
 
+        // f64 → IBM is lossy: IBM HFP's 56-bit mantissa cannot survive a
+        // round-trip through f64's 53-bit mantissa (3 low bits truncated).
+        // The conversion succeeds, but the bottom 3 bits zero out — so we
+        // assert f64-level round-trip rather than byte equality.
         let reversed = IbmFloat64::try_from(f).unwrap();
-        assert_eq!(bytes, reversed.bytes);
+        assert_eq!(f.to_bits(), f64::from(reversed).to_bits());
     }
 
     #[test]
@@ -423,55 +398,50 @@ mod tests {
     }
 
     #[test]
-    fn from_nan_fails() {
+    fn from_nan_errors() {
         let result = IbmFloat64::try_from(f64::NAN);
-        assert!(result.is_err());
+        assert_eq!(Err(IbmFloat64Error::NotANumber), result);
     }
 
     #[test]
-    fn from_negative_infinity_translates() {
-        let ibm = IbmFloat64::try_from(f64::NEG_INFINITY).unwrap();
-        assert_eq!(IbmFloat64::MIN_VALUE, ibm);
+    fn from_negative_infinity_errors() {
+        let result = IbmFloat64::try_from(f64::NEG_INFINITY);
+        assert_eq!(Err(IbmFloat64Error::NegativeInfinity), result);
     }
 
     #[test]
-    fn from_positive_infinity_translates() {
-        let ibm = IbmFloat64::try_from(f64::INFINITY).unwrap();
-        assert_eq!(IbmFloat64::MAX_VALUE, ibm);
+    fn from_positive_infinity_errors() {
+        let result = IbmFloat64::try_from(f64::INFINITY);
+        assert_eq!(Err(IbmFloat64Error::PositiveInfinity), result);
     }
 
     #[test]
-    fn underflow_positive_returns_positive_zero() {
-        // Very small positive number that underflows IBM range
+    fn underflow_positive_errors() {
+        // Very small positive number, smaller than the smallest representable IBM HFP value.
         let tiny = 1.0e-310;
-        let ibm = IbmFloat64::try_from(tiny).unwrap();
-        assert!(ibm.is_sign_positive());
-        assert_approx_eq!(f64, 0.0, f64::from(ibm));
+        let result = IbmFloat64::try_from(tiny);
+        assert_eq!(Err(IbmFloat64Error::PositiveUnderflow), result);
     }
 
     #[test]
-    fn underflow_negative_returns_negative_zero() {
-        // Very small negative number that underflows IBM range
+    fn underflow_negative_errors() {
         let tiny = -1.0e-310;
-        let ibm = IbmFloat64::try_from(tiny).unwrap();
-        assert!(ibm.is_sign_negative());
-        assert_approx_eq!(f64, 0.0, f64::from(ibm));
+        let result = IbmFloat64::try_from(tiny);
+        assert_eq!(Err(IbmFloat64Error::NegativeUnderflow), result);
     }
 
     #[test]
-    fn overflow_positive_returns_max_value() {
-        // Large positive number that overflows IBM range
+    fn overflow_positive_errors() {
         let huge = 1.0e300;
-        let ibm = IbmFloat64::try_from(huge).unwrap();
-        assert_eq!(IbmFloat64::MAX_VALUE, ibm);
+        let result = IbmFloat64::try_from(huge);
+        assert_eq!(Err(IbmFloat64Error::PositiveOverflow), result);
     }
 
     #[test]
-    fn overflow_negative_returns_min_value() {
-        // Large negative number that overflows IBM range
+    fn overflow_negative_errors() {
         let huge = -1.0e300;
-        let ibm = IbmFloat64::try_from(huge).unwrap();
-        assert_eq!(IbmFloat64::MIN_VALUE, ibm);
+        let result = IbmFloat64::try_from(huge);
+        assert_eq!(Err(IbmFloat64Error::NegativeOverflow), result);
     }
 
     #[test]
@@ -707,7 +677,12 @@ mod tests {
     #[test]
     fn from_str_rejects_nan() {
         let result: Result<IbmFloat64, _> = "nan".parse();
-        assert!(matches!(result, Err(ParseIbmFloat64Error::NotANumber)));
+        assert_eq!(
+            Err(ParseIbmFloat64Error::Conversion(
+                IbmFloat64Error::NotANumber
+            )),
+            result
+        );
     }
 
     #[test]
@@ -720,12 +695,25 @@ mod tests {
     }
 
     #[test]
-    fn from_str_infinity_saturates() {
-        let positive: IbmFloat64 = "inf".parse().unwrap();
-        assert_eq!(IbmFloat64::MAX_VALUE, positive);
+    fn from_str_rejects_positive_infinity() {
+        let result: Result<IbmFloat64, _> = "inf".parse();
+        assert_eq!(
+            Err(ParseIbmFloat64Error::Conversion(
+                IbmFloat64Error::PositiveInfinity
+            )),
+            result
+        );
+    }
 
-        let negative: IbmFloat64 = "-inf".parse().unwrap();
-        assert_eq!(IbmFloat64::MIN_VALUE, negative);
+    #[test]
+    fn from_str_rejects_negative_infinity() {
+        let result: Result<IbmFloat64, _> = "-inf".parse();
+        assert_eq!(
+            Err(ParseIbmFloat64Error::Conversion(
+                IbmFloat64Error::NegativeInfinity
+            )),
+            result
+        );
     }
 
     #[test]
