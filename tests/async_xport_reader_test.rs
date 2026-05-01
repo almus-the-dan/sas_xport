@@ -1,3 +1,5 @@
+#![cfg(feature = "tokio")]
+
 use sas_xport::sas::xport::{AsyncXportReader, XportValue};
 use tokio::fs::File as AsyncFile;
 

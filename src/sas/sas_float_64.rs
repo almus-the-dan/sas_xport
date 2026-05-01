@@ -1,4 +1,4 @@
-use crate::ibm::{IbmFloat64, IbmFloatError};
+use ibm_hfp::{IbmFloat64, IbmFloatError};
 use std::fmt::{self, Display, Formatter};
 
 use super::sas_missing_value::SasMissingValue;

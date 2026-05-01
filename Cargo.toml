@@ -21,13 +21,13 @@ categories = ["parser-implementations", "encoding", "science"]
 [dependencies]
 chrono = { version = "0.4.44", optional = true }
 encoding_rs = { version = "0.8.35" }
+ibm_hfp = "0.1.0"
 tokio = { version = "1.50.0", features = ["io-util", "fs"], optional = true }
 
 [dev-dependencies]
 clap = { version = "4", features = ["derive"] }
 criterion = { version = "0.8.2", features = ["html_reports"] }
 flate2 = "1"
-ibmfloat = "0.1.1"
 serde_json = "1"
 tempfile = "3"
 tokio = { version = "1.50.0", features = ["rt", "macros"] }
@@ -39,10 +39,6 @@ debug = 1
 
 [[bench]]
 name = "read_records"
-harness = false
-
-[[bench]]
-name = "ibm_conversion"
 harness = false
 
 [features]
