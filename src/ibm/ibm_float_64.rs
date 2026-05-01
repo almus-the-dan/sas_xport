@@ -179,7 +179,7 @@ impl TryFrom<f64> for IbmFloat64 {
             xport2 <<= shift;
         }
 
-        // exponent is now guaranteed to be in range [-260, 248], so this won't wrap
+        // exponent is now guaranteed to be in range [-260, 251], so this won't wrap
         #[allow(clippy::cast_sign_loss)]
         let ibm_exponent = ((exponent >> 2) + 65) as u32;
 

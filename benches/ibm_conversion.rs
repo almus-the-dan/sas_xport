@@ -56,11 +56,12 @@ fn build_inputs() -> Vec<[u8; 8]> {
 /// range, so `IbmFloat64::try_from` never hits the over/underflow or NaN branches.
 /// Edge cases first, pseudo-random tail clamped by exponent.
 fn build_f64_inputs() -> Vec<f64> {
-    // IBM HFP 64-bit covers roughly 5.4e-79 .. 7.2e75. The corresponding biased
-    // IEEE exponent range is ~[763, 1275]; clamp into [768, 1278) for a safe margin.
-    // This produces random sign + random mantissa, never zero/inf/NaN.
+    // IBM HFP 64-bit covers roughly 5.4e-79 .. 7.2e75. The valid IEEE
+    // biased-exponent range is [763, 1274] (true exp [-260, 251]). Clamp into
+    // [768, 1270) for a safe margin so strict `try_from` never errors on the
+    // inputs (it errors strictly above 251). Random sign + random mantissa.
     const EXP_LO: u64 = 768;
-    const EXP_RANGE: u64 = 510;
+    const EXP_RANGE: u64 = 502;
 
     let mut out: Vec<f64> = Vec::with_capacity(N);
 
