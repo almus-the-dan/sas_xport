@@ -169,5 +169,6 @@
 
 #![warn(missing_docs)]
 
-mod ibm;
+#[doc(hidden)]
+pub mod ibm;
 pub mod sas;

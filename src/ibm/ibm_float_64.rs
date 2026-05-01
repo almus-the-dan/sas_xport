@@ -630,4 +630,86 @@ mod tests {
             ITERATIONS * test_f64s.len()
         );
     }
+
+    #[test]
+    #[ignore = "Bit-exact agreement check against the ibmfloat crate (run with --nocapture)"]
+    fn agreement_with_ibmfloat() {
+        use ibmfloat::F64;
+
+        fn check(bytes: [u8; 8]) -> Option<(u64, u64)> {
+            let ours = f64::from(IbmFloat64::from_be_bytes(bytes)).to_bits();
+            let theirs = f64::from(F64::from_be_bytes(bytes)).to_bits();
+            if ours == theirs {
+                None
+            } else {
+                Some((ours, theirs))
+            }
+        }
+
+        fn report(label: &str, total: usize, disagreements: &[([u8; 8], u64, u64)]) {
+            println!(
+                "{label}: {total} inputs, {} disagreements",
+                disagreements.len()
+            );
+            for (bytes, ours, theirs) in disagreements.iter().take(10) {
+                println!("  in={bytes:02X?}  ours={ours:016X}  ibmfloat={theirs:016X}");
+            }
+        }
+
+        // ----- Curated set: every (sign, exponent) byte × representative mantissa shapes,
+        //       plus SAS missing-value sentinels and explicit extremes.
+        let mantissa_shapes: &[[u8; 7]] = &[
+            [0x00; 7],                                  // mantissa = 0 (signed zero regardless of exp)
+            [0xFF; 7],                                  // mantissa = all-ones
+            [0x80, 0, 0, 0, 0, 0, 0],                   // leading hex digit 0x8 (full normalized)
+            [0xF0, 0, 0, 0, 0, 0, 0],                   // leading hex digit 0xF
+            [0x10, 0, 0, 0, 0, 0, 0],                   // leading hex digit 0x1 (least normalized)
+            [0x10, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF], // leading 0x1 + full tail
+            [0x01, 0, 0, 0, 0, 0, 0],                   // 1 leading zero hex digit (subnormal)
+            [0x00, 0x10, 0, 0, 0, 0, 0],                // 2 leading zero hex digits
+            [0x00, 0x01, 0, 0, 0, 0, 0],                // 3 leading zero hex digits
+            [0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0xDE], // arbitrary mixed
+        ];
+        let mut curated: Vec<[u8; 8]> = Vec::new();
+        for byte0 in 0u8..=0xFF {
+            for shape in mantissa_shapes {
+                let mut b = [0u8; 8];
+                b[0] = byte0;
+                b[1..].copy_from_slice(shape);
+                curated.push(b);
+            }
+        }
+        for &c in b".ABCDEFGHIJKLMNOPQRSTUVWXYZ_" {
+            curated.push([c, 0, 0, 0, 0, 0, 0, 0]);
+        }
+        curated.push([0x7F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF]); // MAX_VALUE
+        curated.push([0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF]); // MIN_VALUE
+        curated.push([0x01, 0x10, 0, 0, 0, 0, 0, 0]); // smallest normal
+        curated.push([0x00, 0, 0, 0, 0, 0, 0, 0x01]); // smallest denormal
+
+        let curated_disagreements: Vec<([u8; 8], u64, u64)> = curated
+            .iter()
+            .filter_map(|&b| check(b).map(|(o, t)| (b, o, t)))
+            .collect();
+        report("curated", curated.len(), &curated_disagreements);
+
+        // ----- Random set: splitmix64 over the full [u8; 8] space.
+        const RANDOM_N: usize = 5_000_000;
+        let mut state: u64 = 0xCAFE_F00D_BAAD_F00D;
+        let mut random_disagreements: Vec<([u8; 8], u64, u64)> = Vec::new();
+        for _ in 0..RANDOM_N {
+            state = state.wrapping_add(0x9E37_79B9_7F4A_7C15);
+            let mut z = state;
+            z = (z ^ (z >> 30)).wrapping_mul(0xBF58_476D_1CE4_E5B9);
+            z = (z ^ (z >> 27)).wrapping_mul(0x94D0_49BB_1331_11EB);
+            let bytes = (z ^ (z >> 31)).to_be_bytes();
+            if let Some((o, t)) = check(bytes) {
+                random_disagreements.push((bytes, o, t));
+            }
+        }
+        report("random", RANDOM_N, &random_disagreements);
+
+        let total = curated_disagreements.len() + random_disagreements.len();
+        assert_eq!(total, 0, "implementations disagree on {total} inputs");
+    }
 }
