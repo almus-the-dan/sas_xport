@@ -1,8 +1,19 @@
 # IBM Hexadecimal Floating Point
 
-Pure-Rust types for IBM 64-bit hexadecimal floating point (IBM HFP), the numeric
-format used by SAS XPORT and other IBM-derived legacy data formats. A 32-bit
-`IbmFloat32` companion is planned.
+Pure-Rust types for IBM 32-bit and 64-bit hexadecimal floating point (IBM HFP),
+the numeric formats used by SAS XPORT (64-bit), SEG-Y seismic data (32-bit),
+and other IBM-derived legacy data formats. The two formats share the same 7-bit
+characteristic and therefore the same numeric range (~5.4e-79 to ~7.2e75); they
+differ only in mantissa width (24 vs 56 bits).
+
+## 32-bit support
+
+`IbmFloat32` currently exposes only the read direction: `From<IbmFloat32> for f64`.
+The conversion is **bit-exact** because IBM32's 24-bit mantissa fits inside f64's
+53-bit significand with 29 bits to spare, and `16^k` is exactly representable in
+f64 across the full IBM HFP exponent range — there is no rounding-mode question
+to decide here, unlike the 64-bit case. `TryFrom<f64> for IbmFloat32` is not
+implemented (yet); add it when there's a writer-side use case.
 
 ## IBM → IEEE conversion: truncation, by design
 
