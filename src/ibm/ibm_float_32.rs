@@ -1,4 +1,7 @@
 use std::fmt::{self, Display, Formatter, LowerExp, UpperExp};
+use std::str::FromStr;
+
+use super::{IbmFloat64, IbmFloatError, ParseIbmFloatError};
 
 /// Represents a 32-bit IBM hexadecimal floating point value.
 ///
@@ -12,12 +15,10 @@ use std::fmt::{self, Display, Formatter, LowerExp, UpperExp};
 /// pattern, mirroring the conventions of [`IbmFloat64`]. Convert to `f64` for
 /// numeric comparison.
 ///
-/// Currently read-only: only `From<IbmFloat32> for f64` is implemented. The
-/// conversion is bit-exact — IBM32's 24-bit mantissa fits inside f64's 53-bit
-/// significand with 29 bits to spare, and `16^k` is exactly representable in
-/// f64 across the full IBM HFP exponent range, so no precision is lost.
-///
-/// See `src/ibm/README.md` for crate-level conventions.
+/// Public conversions go IBM → IEEE only: `From<IbmFloat32> for f64` is
+/// bit-exact, and `FromStr` parses decimal strings via that same f64 path.
+/// There is intentionally no public `TryFrom<f64>` — see `src/ibm/README.md`
+/// for the rationale.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct IbmFloat32 {
     bytes: [u8; 4],
@@ -82,6 +83,38 @@ impl IbmFloat32 {
     #[must_use]
     pub const fn is_sign_negative(self) -> bool {
         self.bytes[0] & 0x80 != 0
+    }
+
+    /// Strictly converts an `f64` to an `IbmFloat32` by delegating to
+    /// [`IbmFloat64::try_from`] and truncating to the top 4 bytes.
+    ///
+    /// `pub(crate)` — see `src/ibm/README.md`. The strict semantics here are
+    /// incomplete (precision truncation from f64's 53-bit mantissa down to
+    /// IBM32's 24-bit mantissa is silent and cannot be surfaced through
+    /// [`IbmFloatError`]), so we don't expose this as a public
+    /// `TryFrom<f64>`. Used internally by `<IbmFloat32 as FromStr>::from_str`.
+    pub(crate) fn try_from_f64(value: f64) -> Result<Self, IbmFloatError> {
+        let ibm64 = IbmFloat64::try_from(value)?;
+        let b = ibm64.to_be_bytes();
+        Ok(Self::from_be_bytes([b[0], b[1], b[2], b[3]]))
+    }
+}
+
+impl FromStr for IbmFloat32 {
+    type Err = ParseIbmFloatError;
+
+    /// Parses an `IbmFloat32` by first parsing the input as an `f64` and
+    /// then narrowing to IBM HFP 32-bit format.
+    ///
+    /// The f64 intermediate (rather than f32) preserves IBM32's full numeric
+    /// range: strings like `"1e50"` are well within IBM32's range
+    /// (~5.4e-79 to ~7.2e75) but would saturate to infinity going through
+    /// f32 (~3.4e38 max), causing a misleading `Infinite` error for a value
+    /// that's actually representable.
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let value = s.parse::<f64>()?;
+        let value = Self::try_from_f64(value)?;
+        Ok(value)
     }
 }
 
@@ -370,5 +403,193 @@ mod tests {
         set.insert(plus_zero);
         set.insert(minus_zero);
         assert_eq!(set.len(), 2);
+    }
+
+    #[test]
+    fn try_from_f64_one() {
+        let x = IbmFloat32::try_from_f64(1.0).unwrap();
+        assert_eq!([0x41, 0x10, 0, 0], x.to_be_bytes());
+    }
+
+    #[test]
+    fn try_from_f64_negative_one() {
+        let x = IbmFloat32::try_from_f64(-1.0).unwrap();
+        assert_eq!([0xC1, 0x10, 0, 0], x.to_be_bytes());
+    }
+
+    #[test]
+    fn try_from_f64_zero_preserves_sign() {
+        assert_eq!(
+            [0u8; 4],
+            IbmFloat32::try_from_f64(0.0).unwrap().to_be_bytes()
+        );
+        assert_eq!(
+            [0x80, 0, 0, 0],
+            IbmFloat32::try_from_f64(-0.0).unwrap().to_be_bytes()
+        );
+    }
+
+    #[test]
+    fn try_from_f64_nan_errors() {
+        assert_eq!(
+            Err(IbmFloatError::NotANumber),
+            IbmFloat32::try_from_f64(f64::NAN)
+        );
+    }
+
+    #[test]
+    fn try_from_f64_infinity_errors() {
+        assert_eq!(
+            Err(IbmFloatError::PositiveInfinity),
+            IbmFloat32::try_from_f64(f64::INFINITY)
+        );
+        assert_eq!(
+            Err(IbmFloatError::NegativeInfinity),
+            IbmFloat32::try_from_f64(f64::NEG_INFINITY)
+        );
+    }
+
+    #[test]
+    fn try_from_f64_overflow_errors() {
+        assert_eq!(
+            Err(IbmFloatError::PositiveOverflow),
+            IbmFloat32::try_from_f64(1.0e300)
+        );
+        assert_eq!(
+            Err(IbmFloatError::NegativeOverflow),
+            IbmFloat32::try_from_f64(-1.0e300)
+        );
+    }
+
+    #[test]
+    fn try_from_f64_underflow_errors() {
+        assert_eq!(
+            Err(IbmFloatError::PositiveUnderflow),
+            IbmFloat32::try_from_f64(1.0e-310)
+        );
+        assert_eq!(
+            Err(IbmFloatError::NegativeUnderflow),
+            IbmFloat32::try_from_f64(-1.0e-310)
+        );
+    }
+
+    #[test]
+    fn try_from_f64_matches_ibm_float_64_truncated() {
+        // For any in-range f64, the IBM32 result must equal the top 4 bytes
+        // of the IBM64 result. This is the input-direction analogue of
+        // `matches_ibm_float_64_for_padded_bytes`.
+        let cases: &[f64] = &[
+            1.0,
+            -1.0,
+            2.0,
+            0.5,
+            0.25,
+            16.0,
+            118.625,
+            -118.625,
+            std::f64::consts::PI,
+            0.1,
+            1.0e10,
+            -1.0e10,
+            1.0e50,
+            -1.0e50,
+            1.0e-30,
+            -1.0e-30,
+        ];
+        for &f in cases {
+            let ibm32 = IbmFloat32::try_from_f64(f).unwrap();
+            let ibm64 = IbmFloat64::try_from(f).unwrap();
+            let b64 = ibm64.to_be_bytes();
+            assert_eq!(
+                [b64[0], b64[1], b64[2], b64[3]],
+                ibm32.to_be_bytes(),
+                "IBM32(f={f}) bytes should equal top-4 of IBM64(f={f}) bytes"
+            );
+        }
+    }
+
+    #[test]
+    fn from_str_parses_one() {
+        let x: IbmFloat32 = "1.0".parse().unwrap();
+        assert_eq!([0x41, 0x10, 0, 0], x.to_be_bytes());
+    }
+
+    #[test]
+    fn from_str_parses_negative_one() {
+        let x: IbmFloat32 = "-1.0".parse().unwrap();
+        assert_eq!([0xC1, 0x10, 0, 0], x.to_be_bytes());
+    }
+
+    #[test]
+    fn from_str_parses_zero() {
+        let x: IbmFloat32 = "0".parse().unwrap();
+        assert_eq!([0u8; 4], x.to_be_bytes());
+    }
+
+    #[test]
+    fn from_str_parses_scientific() {
+        let x: IbmFloat32 = "1.18625e2".parse().unwrap();
+        assert_approx_eq!(f64, 118.625, f64::from(x));
+    }
+
+    #[test]
+    fn from_str_preserves_full_ibm_range_via_f64() {
+        // 1e50 sits well inside IBM32's range (~7.2e75) but is well above
+        // f32's max (~3.4e38). Going through f64 must succeed; an f32 detour
+        // would saturate to infinity and error.
+        let x: IbmFloat32 = "1e50".parse().unwrap();
+        let f = f64::from(x);
+        assert!(f > 0.0);
+        assert_approx_eq!(f64, 1.0e50, f, epsilon = 1.0e44);
+    }
+
+    #[test]
+    fn from_str_rejects_nan() {
+        let result: Result<IbmFloat32, _> = "nan".parse();
+        assert_eq!(
+            Err(ParseIbmFloatError::Conversion(
+                IbmFloatError::NotANumber
+            )),
+            result
+        );
+    }
+
+    #[test]
+    fn from_str_rejects_positive_infinity() {
+        let result: Result<IbmFloat32, _> = "inf".parse();
+        assert_eq!(
+            Err(ParseIbmFloatError::Conversion(
+                IbmFloatError::PositiveInfinity
+            )),
+            result
+        );
+    }
+
+    #[test]
+    fn from_str_rejects_negative_infinity() {
+        let result: Result<IbmFloat32, _> = "-inf".parse();
+        assert_eq!(
+            Err(ParseIbmFloatError::Conversion(
+                IbmFloatError::NegativeInfinity
+            )),
+            result
+        );
+    }
+
+    #[test]
+    fn from_str_rejects_overflow() {
+        let result: Result<IbmFloat32, _> = "1e300".parse();
+        assert_eq!(
+            Err(ParseIbmFloatError::Conversion(
+                IbmFloatError::PositiveOverflow
+            )),
+            result
+        );
+    }
+
+    #[test]
+    fn from_str_rejects_garbage() {
+        let result: Result<IbmFloat32, _> = "abc".parse();
+        assert!(matches!(result, Err(ParseIbmFloatError::InvalidFloat(_))));
     }
 }

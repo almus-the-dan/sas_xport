@@ -1,4 +1,4 @@
-use crate::ibm::{IbmFloat64, IbmFloat64Error};
+use crate::ibm::{IbmFloat64, IbmFloatError};
 use std::fmt::{self, Display, Formatter};
 
 use super::sas_missing_value::SasMissingValue;
@@ -12,8 +12,8 @@ use super::sas_missing_value::SasMissingValue;
 /// pre-filters NaN via `is_finite()`, so the helper never actually returns
 /// `Err` from inside `SasFloat64::try_from` — but we keep the fallible
 /// signature so the helper is reusable by future callers without surprise).
-fn ieee_to_ibm_saturating(value: f64) -> Result<IbmFloat64, IbmFloat64Error> {
-    use IbmFloat64Error::{
+fn ieee_to_ibm_saturating(value: f64) -> Result<IbmFloat64, IbmFloatError> {
+    use IbmFloatError::{
         NegativeInfinity, NegativeOverflow, NegativeUnderflow, NotANumber, PositiveInfinity,
         PositiveOverflow, PositiveUnderflow,
     };

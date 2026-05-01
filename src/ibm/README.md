@@ -8,12 +8,30 @@ differ only in mantissa width (24 vs 56 bits).
 
 ## 32-bit support
 
-`IbmFloat32` currently exposes only the read direction: `From<IbmFloat32> for f64`.
-The conversion is **bit-exact** because IBM32's 24-bit mantissa fits inside f64's
-53-bit significand with 29 bits to spare, and `16^k` is exactly representable in
-f64 across the full IBM HFP exponent range — there is no rounding-mode question
-to decide here, unlike the 64-bit case. `TryFrom<f64> for IbmFloat32` is not
-implemented (yet); add it when there's a writer-side use case.
+`IbmFloat32` exposes the read direction (`From<IbmFloat32> for f64`, bit-exact
+because the 24-bit IBM mantissa fits inside f64's 53-bit significand with 29
+bits to spare and `16^k` is exact in f64 across the IBM HFP exponent range)
+plus a public `FromStr` for parsing decimal strings.
+
+`FromStr` parses through `f64` rather than `f32` to preserve IBM32's full
+numeric range — strings like `"1e50"` are well within IBM32's range
+(~5.4e-79 to ~7.2e75) but would saturate to infinity going through f32
+(~3.4e38), causing a misleading `Infinite` error for values that are actually
+representable.
+
+There is intentionally **no public `TryFrom<f64>` for `IbmFloat32`**. The
+conversion has three lossy modes — range overflow, range underflow, and
+precision truncation (53-bit f64 mantissa → 24-bit IBM32 mantissa) — but a
+`TryFrom` error type can only surface the first two; precision truncation is
+silent. A "strict" `TryFrom` would therefore deliver an incomplete strictness
+guarantee, mirroring `std`'s deliberate absence of `TryFrom<f64> for f32` for
+the same reason. The conversion still exists internally as `pub(crate)
+IbmFloat32::try_from_f64`, used by the `FromStr` impl. `FromStr`'s
+`ParseIbmFloatError` carries an `IbmFloatError` that *also* doesn't
+surface precision truncation, but that's expected: a string parser is best
+understood as "parse to nearest representable value," not as a strict
+1-to-1 mapping. Add a public `TryFrom<f64>` later when a use case justifies
+the incomplete-strictness tradeoff.
 
 ## IBM → IEEE conversion: truncation, by design
 
@@ -41,7 +59,7 @@ better.
 ## IEEE → IBM conversion: strict, with typed errors
 
 `<IbmFloat64 as TryFrom<f64>>::try_from` is **strict**. Anything that cannot be
-faithfully represented returns `IbmFloat64Error` with a specific variant
+faithfully represented returns `IbmFloatError` with a specific variant
 (`NotANumber`, `PositiveInfinity` / `NegativeInfinity`, `PositiveOverflow` /
 `NegativeOverflow`, `PositiveUnderflow` / `NegativeUnderflow`). The crate
 deliberately does not implement saturating semantics on the trait — callers
@@ -49,8 +67,8 @@ that want clamping at the IBM range boundary should match on the error variant
 and substitute `MAX_VALUE`, `MIN_VALUE`, or signed zero as appropriate. This
 keeps the lossy-conversion decision visible at the call site.
 
-`FromStr` returns `ParseIbmFloat64Error`, which composes a `ParseFloatError`
-(parse failure) and `IbmFloat64Error` (out-of-range f64) so both failure modes
+`FromStr` returns `ParseIbmFloatError`, which composes a `ParseFloatError`
+(parse failure) and `IbmFloatError` (out-of-range f64) so both failure modes
 are surfaced through a single `?` chain.
 
 ## Equality, ordering, and hashing

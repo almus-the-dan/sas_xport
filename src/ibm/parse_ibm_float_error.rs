@@ -2,19 +2,20 @@ use std::error::Error;
 use std::fmt::{self, Display, Formatter};
 use std::num::ParseFloatError;
 
-use super::IbmFloat64Error;
+use super::IbmFloatError;
 
-/// Error returned by `<IbmFloat64 as FromStr>::from_str` when parsing fails.
+/// Error returned by `<IbmFloat64 as FromStr>::from_str` and
+/// `<IbmFloat32 as FromStr>::from_str` when parsing fails.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ParseIbmFloat64Error {
+pub enum ParseIbmFloatError {
     /// The input could not be parsed as an `f64`.
     InvalidFloat(ParseFloatError),
-    /// The input parsed as `f64` but the value could not be converted to
-    /// `IbmFloat64` (NaN, infinite, overflow, or underflow).
-    Conversion(IbmFloat64Error),
+    /// The input parsed as `f64` but the value could not be converted into
+    /// the target IBM HFP format (NaN, infinite, overflow, or underflow).
+    Conversion(IbmFloatError),
 }
 
-impl Display for ParseIbmFloat64Error {
+impl Display for ParseIbmFloatError {
     fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
         match self {
             Self::InvalidFloat(e) => Display::fmt(e, formatter),
@@ -23,7 +24,7 @@ impl Display for ParseIbmFloat64Error {
     }
 }
 
-impl Error for ParseIbmFloat64Error {
+impl Error for ParseIbmFloatError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
             Self::InvalidFloat(e) => Some(e),
@@ -32,14 +33,14 @@ impl Error for ParseIbmFloat64Error {
     }
 }
 
-impl From<ParseFloatError> for ParseIbmFloat64Error {
+impl From<ParseFloatError> for ParseIbmFloatError {
     fn from(value: ParseFloatError) -> Self {
         Self::InvalidFloat(value)
     }
 }
 
-impl From<IbmFloat64Error> for ParseIbmFloat64Error {
-    fn from(value: IbmFloat64Error) -> Self {
+impl From<IbmFloatError> for ParseIbmFloatError {
+    fn from(value: IbmFloatError) -> Self {
         Self::Conversion(value)
     }
 }

@@ -1,7 +1,7 @@
 use std::fmt::{self, Display, Formatter, LowerExp, UpperExp};
 use std::str::FromStr;
 
-use super::{IbmFloat64Error, ParseIbmFloat64Error};
+use super::{IbmFloatError, ParseIbmFloatError};
 
 /// Represents a 64-bit IBM hexadecimal floating point value.
 ///
@@ -98,7 +98,7 @@ impl IbmFloat64 {
 }
 
 impl TryFrom<f64> for IbmFloat64 {
-    type Error = IbmFloat64Error;
+    type Error = IbmFloatError;
 
     /// Strictly converts an `f64` to an `IbmFloat64`.
     ///
@@ -107,8 +107,8 @@ impl TryFrom<f64> for IbmFloat64 {
     /// should match on the error variants and substitute `MAX_VALUE`,
     /// `MIN_VALUE`, or signed zero as appropriate.
     ///
-    /// - NaN → [`IbmFloat64Error::NotANumber`].
-    /// - ±Infinity → [`IbmFloat64Error::PositiveInfinity`] / [`IbmFloat64Error::NegativeInfinity`].
+    /// - NaN → [`IbmFloatError::NotANumber`].
+    /// - ±Infinity → [`IbmFloatError::PositiveInfinity`] / [`IbmFloatError::NegativeInfinity`].
     /// - Magnitude exceeds `MAX_VALUE` / falls below `MIN_VALUE` → the
     ///   corresponding `Overflow` variant.
     /// - Nonzero magnitude smaller than the smallest representable IBM value
@@ -116,13 +116,13 @@ impl TryFrom<f64> for IbmFloat64 {
     /// - `+0.0` and `-0.0` succeed and preserve sign.
     fn try_from(value: f64) -> Result<Self, Self::Error> {
         if value.is_nan() {
-            return Err(IbmFloat64Error::NotANumber);
+            return Err(IbmFloatError::NotANumber);
         }
         if value.is_infinite() {
             return Err(if value.is_sign_positive() {
-                IbmFloat64Error::PositiveInfinity
+                IbmFloatError::PositiveInfinity
             } else {
-                IbmFloat64Error::NegativeInfinity
+                IbmFloatError::NegativeInfinity
             });
         }
 
@@ -150,9 +150,9 @@ impl TryFrom<f64> for IbmFloat64 {
 
         if exponent < -260 {
             return Err(if is_negative {
-                IbmFloat64Error::NegativeUnderflow
+                IbmFloatError::NegativeUnderflow
             } else {
-                IbmFloat64Error::PositiveUnderflow
+                IbmFloatError::PositiveUnderflow
             });
         }
 
@@ -161,9 +161,9 @@ impl TryFrom<f64> for IbmFloat64 {
         // strictly above 251 cannot fit in 7 bits of IBM characteristic.
         if exponent > 251 {
             return Err(if is_negative {
-                IbmFloat64Error::NegativeOverflow
+                IbmFloatError::NegativeOverflow
             } else {
-                IbmFloat64Error::PositiveOverflow
+                IbmFloatError::PositiveOverflow
             });
         }
 
@@ -271,11 +271,11 @@ impl UpperExp for IbmFloat64 {
 }
 
 impl FromStr for IbmFloat64 {
-    type Err = ParseIbmFloat64Error;
+    type Err = ParseIbmFloatError;
 
     /// Parses an `IbmFloat64` by first parsing the input as an `f64` and then
     /// converting via `TryFrom<f64>`. Failures from either step are surfaced
-    /// via the corresponding [`ParseIbmFloat64Error`] variant.
+    /// via the corresponding [`ParseIbmFloatError`] variant.
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let value = s.parse::<f64>()?;
         let value = Self::try_from(value)?;
@@ -400,19 +400,19 @@ mod tests {
     #[test]
     fn from_nan_errors() {
         let result = IbmFloat64::try_from(f64::NAN);
-        assert_eq!(Err(IbmFloat64Error::NotANumber), result);
+        assert_eq!(Err(IbmFloatError::NotANumber), result);
     }
 
     #[test]
     fn from_negative_infinity_errors() {
         let result = IbmFloat64::try_from(f64::NEG_INFINITY);
-        assert_eq!(Err(IbmFloat64Error::NegativeInfinity), result);
+        assert_eq!(Err(IbmFloatError::NegativeInfinity), result);
     }
 
     #[test]
     fn from_positive_infinity_errors() {
         let result = IbmFloat64::try_from(f64::INFINITY);
-        assert_eq!(Err(IbmFloat64Error::PositiveInfinity), result);
+        assert_eq!(Err(IbmFloatError::PositiveInfinity), result);
     }
 
     #[test]
@@ -420,28 +420,28 @@ mod tests {
         // Very small positive number, smaller than the smallest representable IBM HFP value.
         let tiny = 1.0e-310;
         let result = IbmFloat64::try_from(tiny);
-        assert_eq!(Err(IbmFloat64Error::PositiveUnderflow), result);
+        assert_eq!(Err(IbmFloatError::PositiveUnderflow), result);
     }
 
     #[test]
     fn underflow_negative_errors() {
         let tiny = -1.0e-310;
         let result = IbmFloat64::try_from(tiny);
-        assert_eq!(Err(IbmFloat64Error::NegativeUnderflow), result);
+        assert_eq!(Err(IbmFloatError::NegativeUnderflow), result);
     }
 
     #[test]
     fn overflow_positive_errors() {
         let huge = 1.0e300;
         let result = IbmFloat64::try_from(huge);
-        assert_eq!(Err(IbmFloat64Error::PositiveOverflow), result);
+        assert_eq!(Err(IbmFloatError::PositiveOverflow), result);
     }
 
     #[test]
     fn overflow_negative_errors() {
         let huge = -1.0e300;
         let result = IbmFloat64::try_from(huge);
-        assert_eq!(Err(IbmFloat64Error::NegativeOverflow), result);
+        assert_eq!(Err(IbmFloatError::NegativeOverflow), result);
     }
 
     #[test]
@@ -678,8 +678,8 @@ mod tests {
     fn from_str_rejects_nan() {
         let result: Result<IbmFloat64, _> = "nan".parse();
         assert_eq!(
-            Err(ParseIbmFloat64Error::Conversion(
-                IbmFloat64Error::NotANumber
+            Err(ParseIbmFloatError::Conversion(
+                IbmFloatError::NotANumber
             )),
             result
         );
@@ -690,7 +690,7 @@ mod tests {
         let result: Result<IbmFloat64, _> = "abc".parse();
         assert!(matches!(
             result,
-            Err(ParseIbmFloat64Error::InvalidFloat(_))
+            Err(ParseIbmFloatError::InvalidFloat(_))
         ));
     }
 
@@ -698,8 +698,8 @@ mod tests {
     fn from_str_rejects_positive_infinity() {
         let result: Result<IbmFloat64, _> = "inf".parse();
         assert_eq!(
-            Err(ParseIbmFloat64Error::Conversion(
-                IbmFloat64Error::PositiveInfinity
+            Err(ParseIbmFloatError::Conversion(
+                IbmFloatError::PositiveInfinity
             )),
             result
         );
@@ -709,8 +709,8 @@ mod tests {
     fn from_str_rejects_negative_infinity() {
         let result: Result<IbmFloat64, _> = "-inf".parse();
         assert_eq!(
-            Err(ParseIbmFloat64Error::Conversion(
-                IbmFloat64Error::NegativeInfinity
+            Err(ParseIbmFloatError::Conversion(
+                IbmFloatError::NegativeInfinity
             )),
             result
         );
