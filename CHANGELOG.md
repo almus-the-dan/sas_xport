@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.1] - 2026-05-14
+
+### Changed
+
+- **Performance:** Removed a UTF-8 fast path in `Decoder::decode` that bypassed `encoding_rs` via `std::str::from_utf8` for the common UTF-8 primary encoding. Benchmarking showed the bypass was a net ~9% regression on the `read_all_cursor` bench (100k records, in-memory): the per-call branch on `self.decoders.first()` was costlier than just calling `encoding_rs::UTF_8.decode_without_bom_handling_and_without_replacement`, which is already SIMD-optimized for valid UTF-8 input. All decoding now goes through `encoding_rs` uniformly.
+
 ## [0.4.0] - 2026-05-01
 
 ### Changed

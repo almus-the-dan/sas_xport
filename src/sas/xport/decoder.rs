@@ -43,22 +43,6 @@ impl Decoder {
     }
 
     pub(crate) fn decode<'b>(&self, buffer: &'b [u8]) -> Result<Cow<'b, str>, Cow<'static, str>> {
-        // Fast path: when the primary encoding is UTF-8 (the common case),
-        // use std::str::from_utf8 which is heavily SIMD-optimized and avoids
-        // the encoding_rs function-call overhead.
-        if self.decoders.first() == Some(&encoding_rs::UTF_8) {
-            if let Ok(s) = std::str::from_utf8(buffer) {
-                return Ok(Cow::Borrowed(s));
-            }
-            // Invalid UTF-8 — fall through to try fallback encodings.
-            for decoder in &self.decoders[1..] {
-                let result = decoder.decode_without_bom_handling_and_without_replacement(buffer);
-                if let Some(decoded) = result {
-                    return Ok(decoded);
-                }
-            }
-            return Err(Self::DEFAULT_RESULT);
-        }
         for decoder in &self.decoders {
             let result = decoder.decode_without_bom_handling_and_without_replacement(buffer);
             if let Some(decoded) = result {
